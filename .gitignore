@@ -1,0 +1,5 @@
+node_modules
+.env
+
+# Private: the business owner's voice note (not used by the app)
+client/src/assets/FMV.ogg
