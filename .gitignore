@@ -6,3 +6,8 @@ client/src/assets/FMV.ogg
 
 # Private keys (e.g. the EC2 SSH key) must never be committed
 *.pem
+
+# Reference recordings of the old POS (used to design the stock screens)
+client/sample*.jpeg
+client/sample*.mp4
+client/sample*.ogg
