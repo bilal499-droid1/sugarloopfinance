@@ -140,8 +140,8 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
     if (entry.editIndex !== null) setEntry(blankEntry);
   };
 
-  // Bypass: throw away what's typed and start again (nothing is saved).
-  const bypass = () => {
+  // Clear: throw away what's typed and start again (nothing is saved).
+  const clear = () => {
     setForm(initial);
     setEntry(blankEntry);
     setError('');
@@ -494,16 +494,16 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <button type="button" onClick={bypass} className={buttonClass.secondary} title="Discard what's typed and start again">
-          Bypass
+        <button type="button" onClick={clear} className={buttonClass.secondary} title="Discard what's typed and start again">
+          Clear
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className={buttonClass.secondary}>
             Close
           </button>
         )}
-        <button disabled={busy} className={buttonClass.primary} title="Ctrl+S">
-          {busy ? 'Saving…' : editing ? 'Save changes (Ctrl+S)' : 'Save (Ctrl+S)'}
+        <button disabled={busy} className={buttonClass.primary} title="Shortcut: Ctrl+S">
+          {busy ? 'Saving…' : editing ? 'Save changes' : 'Save'}
         </button>
       </div>
     </form>
