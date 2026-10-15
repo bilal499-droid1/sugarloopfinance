@@ -13,6 +13,7 @@ const vendorSchema = new mongoose.Schema(
     address: String,
     active: { type: Boolean, default: true },
     invoiceSeq: { type: Number, default: 0 }, // last purchase invoice number issued for this vendor
+    returnSeq: { type: Number, default: 0 }, // last purchase return number issued for this vendor
 
     // Derived from billing records (see services/vendorTotals.js)
     complianceScore: { type: Number, default: 100 },

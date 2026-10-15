@@ -13,6 +13,15 @@ import VendorDetailPage from './pages/VendorDetailPage';
 import InventoryPage from './pages/InventoryPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import UsersPage from './pages/UsersPage';
+import StockLayout, { BASE as STOCK_BASE } from './stock/StockLayout';
+import PurchasePage from './stock/pages/PurchasePage';
+import EditPurchasePage from './stock/pages/EditPurchasePage';
+import PurchaseReturnPage from './stock/pages/PurchaseReturnPage';
+import EditReturnPage from './stock/pages/EditReturnPage';
+import PrintPurchasePage from './stock/pages/PrintPurchasePage';
+import PrintVendorPage from './stock/pages/PrintVendorPage';
+import PurchaseSearchPage from './stock/pages/PurchaseSearchPage';
+import StockRefreshPage from './stock/pages/StockRefreshPage';
 
 const RequirePermission = ({ permission, children }) => (useCan()(permission) ? children : <Navigate to="/" replace />);
 
@@ -41,6 +50,19 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/invoices/:id/print" element={<InvoicePrintPage />} />
+        {/* Stock module preview: own URL, not in the main menu until it's finalised. */}
+        <Route path={STOCK_BASE} element={<StockLayout />}>
+          <Route index element={<Navigate to="purchase" replace />} />
+          <Route path="purchase" element={<PurchasePage />} />
+          <Route path="edit-purchase" element={<EditPurchasePage />} />
+          <Route path="purchase-return" element={<PurchaseReturnPage />} />
+          <Route path="edit-return" element={<EditReturnPage />} />
+          <Route path="print-purchase" element={<PrintPurchasePage />} />
+          <Route path="print-vendor" element={<PrintVendorPage />} />
+          <Route path="purchase-search" element={<PurchaseSearchPage />} />
+          <Route path="stock-refresh" element={<StockRefreshPage />} />
+          <Route path="*" element={<Navigate to="purchase" replace />} />
+        </Route>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route

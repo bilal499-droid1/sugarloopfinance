@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import Item from '../models/Item.js';
 import StockMovement from '../models/StockMovement.js';
 import { requireManager } from '../middleware/auth.js';
 import { httpError } from '../middleware/errorHandler.js';
@@ -31,6 +32,45 @@ router.post('/transfers', async (req, res) => {
     user: req.user,
   });
   res.status(201).json(movement);
+});
+
+// Stock Refresh: recount each item's in-hand quantity from its movement history
+// (every change goes through the log, opening stock included).
+const recount = async () => {
+  const [items, totals] = await Promise.all([
+    Item.find().sort('name'),
+    StockMovement.aggregate([{ $group: { _id: '$itemId', total: { $sum: '$change' } } }]),
+  ]);
+  const fromHistory = new Map(totals.map((t) => [String(t._id), Math.round(t.total * 1000) / 1000]));
+  return items.map((item) => {
+    const counted = fromHistory.get(item.id) ?? 0;
+    return { item, counted, difference: Math.round((item.inHand - counted) * 1000) / 1000 };
+  });
+};
+
+const checkRow = ({ item, counted, difference }) => ({
+  itemId: item.id,
+  name: item.name,
+  unit: item.unit,
+  inHand: item.inHand,
+  counted,
+  difference,
+  isLowStock: item.isLowStock,
+});
+
+// GET /api/stock/check — compare stored in-hand quantities with the history.
+router.get('/check', async (req, res) => res.json((await recount()).map(checkRow)));
+
+// Manager: set every mismatched item to its recounted quantity.
+router.post('/refresh', requireManager, async (req, res) => {
+  const rows = await recount();
+  const fixed = [];
+  for (const row of rows.filter((r) => r.difference)) {
+    if (row.counted < 0) throw httpError(400, `${row.item.name} recounts to ${row.counted}; fix its history with a stock adjustment first`);
+    await Item.updateOne({ _id: row.item.id }, { inHand: row.counted });
+    fixed.push(checkRow(row));
+  }
+  res.json({ fixed, checked: rows.length });
 });
 
 // Manager sets the exact in-hand quantity (stock count correction).

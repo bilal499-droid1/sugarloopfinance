@@ -10,6 +10,7 @@ import vendorRoutes from './routes/vendorRoutes.js';
 import itemRoutes from './routes/itemRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import recordRoutes from './routes/recordRoutes.js';
+import returnRoutes from './routes/returnRoutes.js';
 import { announceChanges, liveStream } from './services/live.js';
 
 if (!process.env.JWT_SECRET) {
@@ -35,6 +36,7 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/records', recordRoutes);
+app.use('/api/returns', returnRoutes);
 
 app.use(errorHandler);
 

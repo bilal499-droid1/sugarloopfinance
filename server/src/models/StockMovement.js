@@ -6,6 +6,8 @@ export const MOVEMENT_TYPES = [
   'RECEIPT_REVERSAL', // receipt flagged / edited after verification
   'TRANSFER_OUT', // sent from central warehouse to a bakery branch
   'ADJUSTMENT', // manual correction by an admin
+  'RETURN_OUT', // goods sent back to the vendor (purchase return)
+  'RETURN_REVERSAL', // purchase return edited / deleted
 ];
 
 // Append-only audit log of every change to an item's in-hand quantity.
@@ -18,6 +20,7 @@ const stockMovementSchema = new mongoose.Schema(
     before: Number,
     after: Number,
     recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'BillingRecord' },
+    returnId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseReturn' },
     branch: String, // destination for TRANSFER_OUT
     reason: String,
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
