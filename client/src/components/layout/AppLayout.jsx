@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Croissant, LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X } from 'lucide-react';
+import { Croissant, LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useCan, ROLE_LABELS } from '../../utils/permissions';
@@ -8,6 +8,7 @@ import VerificationDrawer from '../inspector/VerificationDrawer';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/stock-preview/purchase', label: 'Purchase', icon: ShoppingCart },
   { to: '/invoices/new', label: 'New Invoice', icon: FilePlus2, permission: 'createInvoice' },
   { to: '/vendors', label: 'Vendors', icon: Building2 },
   { to: '/inventory', label: 'Inventory', icon: Boxes },
