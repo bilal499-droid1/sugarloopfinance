@@ -351,6 +351,15 @@ export default function ReturnForm({ initial, saved, onSaved, onCancel }) {
               options={productOptions}
               columns={productColumns}
               placeholder={bill ? "Search this bill's products" : 'Type to search products'}
+              emptyText={
+                bill
+                  ? entry.search.trim()
+                    ? `"${entry.search.trim()}" isn't on this bill, or it has all been returned.`
+                    : 'Everything on this bill has been returned.'
+                  : entry.search.trim()
+                    ? `No product matches "${entry.search.trim()}". Products are added in Inventory.`
+                    : 'No products yet. Products are added in Inventory.'
+              }
             />
             {entryItem && (
               <span className="mt-1 block text-xs text-slate-500">

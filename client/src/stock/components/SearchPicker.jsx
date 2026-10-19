@@ -19,7 +19,7 @@ export const findTyped = (options, text) => {
 // `allowNew` lets Enter keep typed text that matches nothing (a new vendor);
 // `allowEmpty` lets Enter on an empty box skip an optional pick. Both pick null.
 const SearchPicker = forwardRef(function SearchPicker(
-  { value, onChange, onPick, options, columns, placeholder, allowNew = false, allowEmpty = false, disabled = false, className = '' },
+  { value, onChange, onPick, options, columns, placeholder, emptyText, allowNew = false, allowEmpty = false, disabled = false, className = '' },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -101,6 +101,12 @@ const SearchPicker = forwardRef(function SearchPicker(
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {/* `emptyText` says why the list is missing when the typed text matches nothing. */}
+      {open && !disabled && !matches.length && emptyText && (
+        <div className="absolute z-20 mt-1 w-full min-w-[22rem] rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-600 shadow-lg">
+          {emptyText}
         </div>
       )}
     </div>

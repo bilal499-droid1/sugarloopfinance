@@ -273,6 +273,18 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               options={productOptions}
               columns={productColumns}
               placeholder="Type to search products"
+              emptyText={
+                <>
+                  {entry.search.trim() ? `No product matches "${entry.search.trim()}". ` : 'No products yet. '}
+                  {can('manageItems') ? (
+                    <Link to="/inventory" onMouseDown={(e) => e.preventDefault()} className="font-medium text-indigo-600 underline">
+                      Add it in Inventory
+                    </Link>
+                  ) : (
+                    'Ask a manager to add it in Inventory.'
+                  )}
+                </>
+              }
             />
             {entryItem && (
               <span className="mt-1 block text-xs text-slate-500">
