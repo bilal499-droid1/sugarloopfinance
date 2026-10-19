@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useCan, ROLE_LABELS } from '../../utils/permissions';
 import VerificationDrawer from '../inspector/VerificationDrawer';
+import ThemeToggle from '../common/ThemeToggle';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -72,14 +73,17 @@ export default function AppLayout() {
       {/* Mobile / tablet top bar */}
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5 lg:hidden">
         <Brand />
-        <button onClick={() => setMenuOpen(true)} className="rounded-md p-2 text-slate-600 hover:bg-slate-100" aria-label="Open menu">
-          <Menu className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button onClick={() => setMenuOpen(true)} className="rounded-md p-2 text-slate-600 hover:bg-slate-100" aria-label="Open menu">
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </header>
 
       {/* Mobile / tablet slide-in menu */}
       {menuOpen && (
-        <div className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden" onClick={() => setMenuOpen(false)}>
+        <div className="fixed inset-0 z-30 bg-gray-900/40 lg:hidden" onClick={() => setMenuOpen(false)}>
           <aside className="flex h-full w-64 max-w-[80%] flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <Brand />
@@ -94,8 +98,9 @@ export default function AppLayout() {
 
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-        <div className="border-b border-slate-200 px-4 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 py-4 pr-2 pl-4">
           <Brand />
+          <ThemeToggle />
         </div>
         {sidebar}
       </aside>

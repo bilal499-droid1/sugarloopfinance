@@ -9,13 +9,13 @@ export default function ReceiptViewer({ src }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  if (!src) return <p className="m-auto text-slate-400">No receipt image</p>;
+  if (!src) return <p className="m-auto text-gray-400">No receipt image</p>;
 
   if (src.toLowerCase().endsWith('.pdf')) {
     return <iframe src={src} title="Receipt PDF" className="h-full w-full" />;
   }
 
-  const button = 'rounded p-1.5 text-slate-200 hover:bg-white/10';
+  const button = 'rounded p-1.5 text-gray-200 hover:bg-white/10';
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -30,11 +30,11 @@ export default function ReceiptViewer({ src }) {
         </div>
       </div>
 
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-slate-900/80 px-2 py-1 text-sm">
+      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-gray-900/80 px-2 py-1 text-sm">
         <button className={button} onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 0.25))} aria-label="Zoom out">
           <ZoomOut className="h-4 w-4" />
         </button>
-        <span className="w-12 text-center text-slate-200 tabular-nums">{Math.round(zoom * 100)}%</span>
+        <span className="w-12 text-center text-gray-200 tabular-nums">{Math.round(zoom * 100)}%</span>
         <button className={button} onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.25))} aria-label="Zoom in">
           <ZoomIn className="h-4 w-4" />
         </button>

@@ -9,7 +9,7 @@ export default function Modal({ title, onClose, children, footer, width = 'max-w
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-gray-900/40 p-4" onClick={onClose}>
       <div className={`flex max-h-[90vh] w-full ${width} flex-col rounded-xl bg-white shadow-xl`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <h2 className="font-semibold text-slate-900">{title}</h2>

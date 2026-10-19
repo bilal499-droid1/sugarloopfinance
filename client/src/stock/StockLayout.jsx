@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
 import { formatDate } from '../utils/format';
+import ThemeToggle from '../components/common/ThemeToggle';
 import { useReturnsStore } from './useReturnsStore';
 
 export const BASE = '/stock-preview';
@@ -52,9 +53,12 @@ export default function StockLayout() {
               </div>
             </div>
           </div>
-          <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Back to app
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+              <ArrowLeft className="h-4 w-4" /> Back to app
+            </Link>
+          </div>
         </div>
 
         <nav className="flex gap-1 overflow-x-auto px-2 pb-2 sm:px-4">

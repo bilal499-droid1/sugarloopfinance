@@ -95,18 +95,18 @@ export default function VerificationDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-slate-900/40" onClick={closeInspector}>
+    <div className="fixed inset-0 z-20 flex justify-end bg-gray-900/40" onClick={closeInspector}>
       <div
         className="flex h-full w-full max-w-[1500px] flex-col bg-white shadow-xl md:flex-row"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left (top on phones): the receipt, or a way to attach one when the bill has none. */}
-        <div className="flex h-[35vh] min-w-0 shrink-0 bg-slate-800 md:h-auto md:flex-1">
+        <div className="flex h-[35vh] min-w-0 shrink-0 bg-gray-800 md:h-auto md:flex-1">
           {record.imageUrl ? (
             <ReceiptViewer src={record.imageUrl} />
           ) : (
-            <div className="m-auto flex max-w-xs flex-col items-center gap-3 p-6 text-center text-slate-300">
-              <ImageOff className="h-10 w-10 text-slate-500" />
+            <div className="m-auto flex max-w-xs flex-col items-center gap-3 p-6 text-center text-gray-300">
+              <ImageOff className="h-10 w-10 text-gray-500" />
               <p className="text-sm">No receipt image for this bill{record.billAvailable === false ? ' (vendor gave no bill)' : ''}.</p>
               {!readOnly && (
                 <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 ${busy ? 'pointer-events-none opacity-50' : ''}`}>
