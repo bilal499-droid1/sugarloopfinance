@@ -114,14 +114,16 @@ router.post('/:id/image', requireManager, upload.single('image'), async (req, re
 // entry can attach a receipt image: it is then sent as multipart form data with the
 // bill fields as JSON in a `data` field. All values are typed by the user; the
 // image is only stored, not read.
-// Only managers/admins can verify or record a payment while creating.
+// Only managers/admins can verify, record a payment or add a new vendor while creating.
 router.post('/', upload.single('image'), async (req, res) => {
   const imageUrl = req.file && `/uploads/${req.file.filename}`;
   try {
     const body = req.is('multipart/form-data') ? JSON.parse(req.body.data ?? '{}') : req.body;
-    const vendor = body.vendorId ? await Vendor.findById(body.vendorId) : await findOrCreateVendor(body.vendorName, body.category);
-    if (!vendor) throw httpError(404, 'Vendor not found');
     const isManager = ['ADMIN', 'MANAGER'].includes(req.user.role);
+    const vendor = body.vendorId
+      ? await Vendor.findById(body.vendorId)
+      : await findOrCreateVendor(body.vendorName, body.category, { create: isManager });
+    if (!vendor) throw httpError(404, 'Vendor not found');
 
     const items = await buildLines(body.items);
     const record = new BillingRecord({

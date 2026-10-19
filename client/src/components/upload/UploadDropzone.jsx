@@ -206,9 +206,13 @@ export default function UploadDropzone() {
               <option key={v.id} value={v.name} />
             ))}
           </datalist>
-          {form.vendorName.trim() && !knownVendor && (
-            <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
-          )}
+          {form.vendorName.trim() &&
+            !knownVendor &&
+            (can('manageVendors') ? (
+              <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
+            ) : (
+              <span className="mt-1 block text-xs text-rose-600">Not in the vendor list. Ask a manager to add this vendor.</span>
+            ))}
         </Field>
 
         <div className="grid grid-cols-2 gap-3">

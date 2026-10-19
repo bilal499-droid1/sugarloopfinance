@@ -234,7 +234,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
             }}
             options={vendorOptions}
             columns={vendorColumns}
-            allowNew
+            allowNew={can('manageVendors')}
             placeholder="Type to search vendors"
           />
           {vendor ? (
@@ -245,7 +245,12 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
             </span>
           ) : (
             !editing &&
-            form.vendorName.trim() && <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
+            form.vendorName.trim() &&
+            (can('manageVendors') ? (
+              <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
+            ) : (
+              <span className="mt-1 block text-xs text-rose-600">Not in the vendor list. Ask a manager to add this vendor.</span>
+            ))
           )}
         </Field>
         <Field label="Vendor Inv #" className="sm:col-span-2">

@@ -11,13 +11,15 @@ const nextVendorCode = async () => {
 };
 
 // Vendor typed by name on a quick entry: reuse a vendor with the same name
-// (ignoring case and extra spaces), otherwise create a new one.
-export const findOrCreateVendor = async (rawName, defaultCategory) => {
+// (ignoring case and extra spaces), otherwise create a new one — only if `create`
+// is allowed (staff can't add vendors).
+export const findOrCreateVendor = async (rawName, defaultCategory, { create = true } = {}) => {
   const name = String(rawName ?? '').trim().replace(/\s+/g, ' ');
   if (!name) throw httpError(400, 'Vendor name is required');
 
   const existing = await Vendor.findOne({ name: new RegExp(`^\\s*${escapeRegex(name).replace(/ /g, '\\s+')}\\s*$`, 'i') });
   if (existing) return existing;
+  if (!create) throw httpError(403, `"${name}" isn't in the vendor list. Ask a manager to add the vendor first.`);
 
   // Retry if another request took the same code in the meantime.
   for (let attempt = 0; attempt < 3; attempt++) {

@@ -112,9 +112,13 @@ export default function NewInvoicePage() {
                   <option key={v.id} value={v.name} />
                 ))}
             </datalist>
-            {form.vendorName.trim() && !vendor && (
-              <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
-            )}
+            {form.vendorName.trim() &&
+              !vendor &&
+              (can('manageVendors') ? (
+                <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
+              ) : (
+                <span className="mt-1 block text-xs text-rose-600">Not in the vendor list. Ask a manager to add this vendor.</span>
+              ))}
           </Field>
           <Field label="Category" className="sm:col-span-2">
             <select required className={inputClass} value={form.category} onChange={set('category')}>
