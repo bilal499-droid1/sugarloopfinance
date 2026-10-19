@@ -3,6 +3,17 @@ import { inputClass } from '../../components/common/Field';
 
 const MAX_OPTIONS = 50;
 
+// The option typed text stands for when nothing was picked from the list: an exact
+// name, or the only option that matches. Undefined if it's ambiguous or unknown.
+export const findTyped = (options, text) => {
+  const q = text.trim().toLowerCase();
+  if (!q) return undefined;
+  const exact = options.find((o) => o.label.toLowerCase() === q);
+  if (exact) return exact;
+  const matches = options.filter((o) => o.search.includes(q));
+  return matches.length === 1 ? matches[0] : undefined;
+};
+
 // Type-to-search box with a pick list, driven from the keyboard like the old POS:
 // type, ↑/↓ to move, Enter to pick (and move on), Esc to close.
 // `allowNew` lets Enter keep typed text that matches nothing (a new vendor);

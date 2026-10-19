@@ -9,7 +9,7 @@ import { PAYMENT_METHODS, formatCurrency, formatDate, formatNumber, today, toDat
 import Field, { inputClass, buttonClass } from '../../components/common/Field';
 import PriceChange from '../../components/common/PriceChange';
 import { lineAmount, linesTotal } from '../../components/invoice/LineItemsEditor';
-import SearchPicker from './SearchPicker';
+import SearchPicker, { findTyped } from './SearchPicker';
 import { useEntryKeys } from './entryKeys';
 
 const HISTORY_ROWS = 5;
@@ -116,10 +116,21 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   };
 
   const commitEntry = () => {
-    if (!entry.itemId) return focus('product');
-    if (!(Number(entry.quantity) > 0)) return focus('quantity');
-    if (entry.unitPrice === '' || Number(entry.unitPrice) < 0) return focus('price');
-    const line = { itemId: entry.itemId, quantity: Number(entry.quantity), unitPrice: Number(entry.unitPrice) };
+    // A product typed but not picked from the list (e.g. clicked away) still counts.
+    const itemId = entry.itemId || findTyped(productOptions, entry.search)?.id;
+    if (!itemId) {
+      setError(entry.search.trim() ? `No single product matches "${entry.search.trim()}" — pick one from the list.` : 'Pick a product.');
+      return focus('product');
+    }
+    if (!(Number(entry.quantity) > 0)) {
+      setError('Enter a quantity greater than 0.');
+      return focus('quantity');
+    }
+    if (entry.unitPrice === '' || Number(entry.unitPrice) < 0) {
+      setError('Enter the price.');
+      return focus('price');
+    }
+    const line = { itemId, quantity: Number(entry.quantity), unitPrice: Number(entry.unitPrice) };
     setForm((f) => ({
       ...f,
       items: entry.editIndex === null ? [...f.items, line] : f.items.map((l, i) => (i === entry.editIndex ? line : l)),

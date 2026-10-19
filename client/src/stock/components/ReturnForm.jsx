@@ -7,7 +7,7 @@ import { formatCurrency, formatDate, formatNumber, today, toDateInput } from '..
 import Field, { inputClass, buttonClass } from '../../components/common/Field';
 import { lineAmount, linesTotal } from '../../components/invoice/LineItemsEditor';
 import { useReturnsStore, returnedOnBill } from '../useReturnsStore';
-import SearchPicker from './SearchPicker';
+import SearchPicker, { findTyped } from './SearchPicker';
 import { useEntryKeys } from './entryKeys';
 
 export const RETURN_REASONS = ['Damaged', 'Expired', 'Wrong item', 'Excess quantity', 'Quality issue', 'Other'];
@@ -163,18 +163,29 @@ export default function ReturnForm({ initial, saved, onSaved, onCancel }) {
   };
 
   const commitEntry = () => {
-    if (!entry.itemId) return focus('product');
+    // A product typed but not picked from the list (e.g. clicked away) still counts.
+    const itemId = entry.itemId || findTyped(productOptions, entry.search)?.id;
+    if (!itemId) {
+      setError(entry.search.trim() ? `No single product matches "${entry.search.trim()}" — pick one from the list.` : 'Pick a product.');
+      return focus('product');
+    }
     const qty = Number(entry.quantity);
-    if (!(qty > 0)) return focus('quantity');
+    if (!(qty > 0)) {
+      setError('Enter a quantity greater than 0.');
+      return focus('quantity');
+    }
     if (bill) {
-      const room = (left.get(entry.itemId) ?? 0) - inForm(entry.itemId, entry.editIndex ?? -1);
+      const room = (left.get(itemId) ?? 0) - inForm(itemId, entry.editIndex ?? -1);
       if (qty > room + 1e-9) {
-        setError(`Only ${formatNumber(room)} ${itemById.get(entry.itemId)?.unit ?? ''} of ${entry.search} left to return on this bill.`);
+        setError(`Only ${formatNumber(room)} ${itemById.get(itemId)?.unit ?? ''} of ${itemById.get(itemId)?.name ?? entry.search} left to return on this bill.`);
         return focus('quantity');
       }
     }
-    if (entry.unitPrice === '' || Number(entry.unitPrice) < 0) return focus('price');
-    const line = { itemId: entry.itemId, quantity: qty, unitPrice: Number(entry.unitPrice) };
+    if (entry.unitPrice === '' || Number(entry.unitPrice) < 0) {
+      setError('Enter the price.');
+      return focus('price');
+    }
+    const line = { itemId, quantity: qty, unitPrice: Number(entry.unitPrice) };
     setForm((f) => ({
       ...f,
       items: entry.editIndex === null ? [...f.items, line] : f.items.map((l, i) => (i === entry.editIndex ? line : l)),
