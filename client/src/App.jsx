@@ -19,7 +19,6 @@ import EditPurchasePage from './stock/pages/EditPurchasePage';
 import PurchaseReturnPage from './stock/pages/PurchaseReturnPage';
 import EditReturnPage from './stock/pages/EditReturnPage';
 import PrintPurchasePage from './stock/pages/PrintPurchasePage';
-import PrintVendorPage from './stock/pages/PrintVendorPage';
 import PurchaseSearchPage from './stock/pages/PurchaseSearchPage';
 import StockRefreshPage from './stock/pages/StockRefreshPage';
 
@@ -58,7 +57,6 @@ export default function App() {
           <Route path="purchase-return" element={<PurchaseReturnPage />} />
           <Route path="edit-return" element={<EditReturnPage />} />
           <Route path="print-purchase" element={<PrintPurchasePage />} />
-          <Route path="print-vendor" element={<PrintVendorPage />} />
           <Route path="purchase-search" element={<PurchaseSearchPage />} />
           <Route path="stock-refresh" element={<StockRefreshPage />} />
           <Route path="*" element={<Navigate to="purchase" replace />} />

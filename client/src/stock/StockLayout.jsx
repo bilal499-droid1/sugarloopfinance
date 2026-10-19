@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ArrowLeft, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2, Users } from 'lucide-react';
+import { ArrowLeft, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
@@ -21,7 +21,6 @@ const GROUPS = [
   ],
   [
     { to: 'print-purchase', label: 'Print Purchase', icon: Printer },
-    { to: 'print-vendor', label: 'Print Purchase Vendor', icon: Users },
     { to: 'purchase-search', label: 'Purchase Search', icon: FileSearch },
   ],
   // Row 3 (row 2, Print Transfer, is left out on purpose).
