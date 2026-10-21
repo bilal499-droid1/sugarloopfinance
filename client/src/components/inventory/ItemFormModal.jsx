@@ -48,7 +48,8 @@ export default function ItemFormModal({ item, onClose }) {
           <input required className={inputClass} value={form.name} onChange={set('name')} placeholder="e.g. Flour (Maida)" />
         </Field>
         <Field label="Unit">
-          <select className={inputClass} value={form.unit} onChange={set('unit')}>
+          <select className={inputClass} value={form.unit ?? ''} onChange={set('unit')}>
+            <option value="">No unit</option>
             {units.map((u) => (
               <option key={u}>{u}</option>
             ))}

@@ -49,7 +49,7 @@ export default function StockActionModal({ item, mode, onClose }) {
         </p>
         {isTransfer ? (
           <>
-            <Field label={`Quantity to send (${item.unit})`}>
+            <Field label={`Quantity to send${item.unit ? ` (${item.unit})` : ''}`}>
               <input type="number" required min="0" max={item.inHand} step="any" className={inputClass} value={form.quantity} onChange={set('quantity')} />
             </Field>
             <Field label="Destination branch">
@@ -61,7 +61,7 @@ export default function StockActionModal({ item, mode, onClose }) {
           </>
         ) : (
           <>
-            <Field label={`Actual quantity in hand (${item.unit})`}>
+            <Field label={`Actual quantity in hand${item.unit ? ` (${item.unit})` : ''}`}>
               <input type="number" required min="0" step="any" className={inputClass} value={form.quantity} onChange={set('quantity')} />
             </Field>
             <Field label="Reason (required, kept in the stock log)">

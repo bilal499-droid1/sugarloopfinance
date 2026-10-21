@@ -373,7 +373,7 @@ export default function ReturnForm({ initial, saved, onSaved, onCancel }) {
               </span>
             )}
           </Field>
-          <Field label={`Quantity${entryItem ? ` (${entryItem.unit})` : ''}`} className="sm:col-span-2">
+          <Field label={`Quantity${entryItem?.unit ? ` (${entryItem.unit})` : ''}`} className="sm:col-span-2">
             <input
               ref={refs.quantity}
               type="number"

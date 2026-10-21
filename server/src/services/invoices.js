@@ -15,15 +15,15 @@ export const nextPurchaseInvoiceNo = async (vendorId) => {
 // `create` is allowed (staff can't add items). Its stock arrives when the bill is verified.
 const findOrCreateItem = async (rawName, unit, { create = false } = {}) => {
   const name = String(rawName ?? '').trim().replace(/\s+/g, ' ');
-  if (!name) throw httpError(400, 'A line item refers to an item that is not in the catalog');
+  if (!name) throw httpError(400, 'A line has no product. Remove it and add the product again.');
   const findByName = () => Item.findOne({ name: new RegExp(`^\\s*${escapeRegex(name).replace(/ /g, '\\s+')}\\s*$`, 'i') });
 
   const existing = await findByName();
   if (existing) return existing;
   if (!create) throw httpError(403, `"${name}" isn't in Inventory. Ask a manager to add the product first.`);
-  if (!UNITS.includes(unit)) throw httpError(400, `Pick a unit for ${name}`);
+  if (unit && !UNITS.includes(unit)) throw httpError(400, `Unknown unit for ${name}`);
   try {
-    return await Item.create({ name, unit });
+    return await Item.create({ name, unit: unit || '' });
   } catch (err) {
     // Another request added the same product in the meantime.
     if (err.code === 11000) return findByName();
@@ -41,7 +41,9 @@ export const buildLines = async (lines = [], { createItems = false } = {}) => {
   const byId = new Map(items.map((i) => [i.id, i]));
   const checked = lines.map((line) => {
     const item = line.itemId && byId.get(String(line.itemId));
-    if (line.itemId && !item) throw httpError(400, 'A line item refers to an item that is not in the catalog');
+    if (line.itemId && !item) {
+      throw httpError(400, `${line.itemName ? `"${line.itemName}"` : 'A product on this bill'} is no longer in Inventory (it may have been deleted). Remove that line and add it again.`);
+    }
     const name = item?.name ?? String(line.itemName ?? '').trim();
     const quantity = Number(line.quantity);
     const unitPrice = Number(line.unitPrice);

@@ -28,7 +28,7 @@ export default function QuickItemsEditor({ lines, onChange, vendorId, receiptDat
                 <option value="">Select item…</option>
                 {items.map((i) => (
                   <option key={i.id} value={i.id}>
-                    {i.name} ({i.unit})
+                    {i.name}{i.unit && ` (${i.unit})`}
                   </option>
                 ))}
               </select>
@@ -38,7 +38,7 @@ export default function QuickItemsEditor({ lines, onChange, vendorId, receiptDat
             </div>
             <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-500">
               <label>
-                Qty{item && ` (${item.unit})`}
+                Qty{item?.unit && ` (${item.unit})`}
                 <input type="number" min="0" step="any" inputMode="decimal" className={input} value={line.quantity} onChange={(e) => update(index, { quantity: e.target.value })} />
               </label>
               <label>

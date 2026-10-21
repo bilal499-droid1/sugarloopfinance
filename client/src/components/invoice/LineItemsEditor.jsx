@@ -59,7 +59,7 @@ export default function LineItemsEditor({ lines, onChange, vendorId, receiptDate
                     <option value="">Select item…</option>
                     {items.map((i) => (
                       <option key={i.id} value={i.id}>
-                        {i.name} ({i.unit})
+                        {i.name}{i.unit && ` (${i.unit})`}
                       </option>
                     ))}
                   </select>
