@@ -34,7 +34,7 @@ export const purchaseFromRecord = (record) => ({
 });
 
 // `unit` is only used for a product that isn't in Inventory yet.
-const blankEntry = { itemId: '', search: '', unit: 'kg', quantity: '', unitPrice: '', amount: '', byAmount: false, editIndex: null };
+const blankEntry = { itemId: '', search: '', unit: 'Kg', quantity: '', unitPrice: '', amount: '', byAmount: false, editIndex: null };
 
 // Quantity × Price = Amount, filled in as you type: a Price works out the Amount and
 // an Amount works out the Price, whichever was typed last (`byAmount`).
@@ -71,7 +71,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   const [entry, setEntry] = useState(blankEntry);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [units, setUnits] = useState(['kg']);
+  const [units, setUnits] = useState(['Kg']);
 
   useEffect(() => {
     api.get('/items/units').then((res) => setUnits(res.data));

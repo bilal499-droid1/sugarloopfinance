@@ -1,5 +1,5 @@
 import BillingRecord from '../models/BillingRecord.js';
-import Item, { UNITS } from '../models/Item.js';
+import Item, { UNITS, canonicalUnit } from '../models/Item.js';
 import Vendor from '../models/Vendor.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { escapeRegex } from './vendors.js';
@@ -21,7 +21,7 @@ const findOrCreateItem = async (rawName, unit, { create = false } = {}) => {
   const existing = await findByName();
   if (existing) return existing;
   if (!create) throw httpError(403, `"${name}" isn't in Inventory. Ask a manager to add the product first.`);
-  if (unit && !UNITS.includes(unit)) throw httpError(400, `Unknown unit for ${name}`);
+  if (unit && !UNITS.includes(canonicalUnit(unit))) throw httpError(400, `Unknown unit for ${name}`);
   try {
     return await Item.create({ name, unit: unit || '' });
   } catch (err) {

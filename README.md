@@ -100,4 +100,4 @@ To point the client at an API on a different address, set `API_URL` before start
 | `npm start --prefix server`               | Start the API without file watching   |
 | `npm run seed --prefix server`            | Load sample vendors and items         |
 | `npm run create-admin --prefix server -- …` | Create or reset an admin account    |
-| `npm run rename-unit --prefix server -- g gms` | Rename a unit on items and past bills |
+| `npm run rename-unit --prefix server [-- from to]` | Rename a unit (no arguments: fix unit capitals) |

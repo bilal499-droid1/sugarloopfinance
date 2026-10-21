@@ -6,8 +6,8 @@ import Field, { inputClass, buttonClass } from '../common/Field';
 
 export default function ItemFormModal({ item, onClose }) {
   const saveItem = useFinanceStore((s) => s.saveItem);
-  const [units, setUnits] = useState(['kg']);
-  const [form, setForm] = useState(item ?? { name: '', unit: 'kg', reorderLevel: 0, openingStock: 0, notes: '' });
+  const [units, setUnits] = useState(['Kg']);
+  const [form, setForm] = useState(item ?? { name: '', unit: 'Kg', reorderLevel: 0, openingStock: 0, notes: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
