@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, ArrowUpDown, Eye, ShieldCheck, Trash2, Image } from 'lucide-react';
+import { Search, ArrowUpDown, Eye, Pencil, ShieldCheck, Trash2, Image } from 'lucide-react';
 import { useFinanceStore, useVisibleRecords } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/format';
@@ -7,6 +7,8 @@ import { CATEGORIES } from '../../utils/categories';
 import { PAYMENT_STATUSES, paymentStatus, itemDescription } from '../../utils/payment';
 import PaymentStatusBadge from '../common/PaymentStatusBadge';
 import ConfirmButton from '../common/ConfirmButton';
+import Modal from '../common/Modal';
+import PurchaseForm, { purchaseFromRecord } from '../../stock/components/PurchaseForm';
 import { useCan } from '../../utils/permissions';
 
 const SORTS = {
@@ -62,6 +64,8 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
   const deleteRecord = useFinanceStore((s) => s.deleteRecord);
   const can = useCan();
   const [deleteError, setDeleteError] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const allRecords = useFinanceStore((s) => s.records);
   const flashIds = useFinanceStore((s) => s.flashIds);
   const flashRef = useRef(null); // table row (tablet / desktop)
   const flashCardRef = useRef(null); // card (phone)
@@ -110,6 +114,17 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
         <Trash2 className="h-4 w-4" /> Delete
       </ConfirmButton>
     );
+  // Bills with products open in the full purchase form; amount-only bills are edited in the inspector.
+  const editButton = (r) =>
+    can('editInvoice') && (
+      <button
+        onClick={() => (r.items?.length ? setEditingId(r.id) : openInspector(r.id))}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100"
+      >
+        <Pencil className="h-4 w-4" /> Edit
+      </button>
+    );
+  const editing = allRecords.find((r) => r.id === editingId);
   const rowTone = (r) => (flashIds.includes(r.id) ? 'bg-emerald-50' : 'hover:bg-indigo-50/50');
 
   const control = 'rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm';
@@ -175,6 +190,7 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
               <PaymentStatusBadge record={r} />
               <BillBadge record={r} />
               <span className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                {editButton(r)}
                 {deleteButton(r)}
               </span>
             </div>
@@ -227,6 +243,7 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
                     <button onClick={() => openInspector(r.id)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-indigo-600 hover:bg-indigo-50">
                       <Eye className="h-4 w-4" /> Open
                     </button>
+                    {editButton(r)}
                     {deleteButton(r)}
                   </div>
                 </td>
@@ -242,6 +259,22 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <Modal
+          title={`Edit ${editing.vendorName}${editing.invoiceNumber ? ` · ${editing.invoiceNumber}` : ''}`}
+          onClose={() => setEditingId(null)}
+          width="max-w-5xl"
+        >
+          <PurchaseForm
+            key={editing.id}
+            record={editing}
+            initial={purchaseFromRecord(editing)}
+            onSaved={() => setEditingId(null)}
+            onCancel={() => setEditingId(null)}
+          />
+        </Modal>
+      )}
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, Imag
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
+import { findVendorByName } from '../../utils/vendors';
 import { CATEGORIES, CATEGORY_KEYS } from '../../utils/categories';
 import { formatCurrency, formatDateTime, toDateInput } from '../../utils/format';
 import StatusBadge from '../common/StatusBadge';
@@ -33,6 +34,7 @@ export default function VerificationDrawer() {
   const setRecordStatus = useFinanceStore((s) => s.setRecordStatus);
   const deleteRecord = useFinanceStore((s) => s.deleteRecord);
   const attachReceipt = useFinanceStore((s) => s.attachReceipt);
+  const vendors = useFinanceStore((s) => s.vendors);
   const can = useCan();
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -159,8 +161,26 @@ export default function VerificationDrawer() {
               </p>
             )}
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <label className="col-span-1 block">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                Supplier
+                <input
+                  className={inputClass}
+                  list="drawer-vendors"
+                  value={form.vendorName ?? ''}
+                  onChange={set('vendorName')}
+                  disabled={readOnly}
+                />
+                <datalist id="drawer-vendors">
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.name} />
+                  ))}
+                </datalist>
+                {!readOnly && form.vendorName.trim() && !findVendorByName(vendors, form.vendorName) && (
+                  <span className="mt-1 block text-xs text-slate-500">New supplier — it will be added to the vendor list.</span>
+                )}
+              </label>
+              <label className="block">
                 Category
                 <select className={inputClass} value={form.category} onChange={set('category')} disabled={readOnly}>
                   {CATEGORY_KEYS.map((key) => (

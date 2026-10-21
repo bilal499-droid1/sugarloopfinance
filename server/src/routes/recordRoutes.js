@@ -5,6 +5,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import BillingRecord from '../models/BillingRecord.js';
 import Vendor from '../models/Vendor.js';
+import PurchaseReturn from '../models/PurchaseReturn.js';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../constants/categories.js';
 import { requireAdmin, requireManager } from '../middleware/auth.js';
 import { httpError } from '../middleware/errorHandler.js';
@@ -156,13 +157,35 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
-// Manager: edit fields / line items.
+const sameName = (a, b) => String(a ?? '').trim().replace(/\s+/g, ' ').toLowerCase() === String(b ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+// Move a bill to the vendor named in an edit (found or created) when it names a different
+// one. The bill takes its payments along and gets a purchase invoice number from its new
+// vendor. Returns the vendor it left (to refresh its totals after saving), or null.
+const moveToVendor = async (record, vendorName) => {
+  if (vendorName === undefined || sameName(vendorName, record.vendorName)) return null;
+  const vendor = await findOrCreateVendor(vendorName);
+  if (String(vendor.id) === String(record.vendorId)) return null;
+  if (await PurchaseReturn.exists({ recordId: record._id })) {
+    throw httpError(400, "This bill has purchase returns against it, so its vendor can't be changed. Delete the returns first.");
+  }
+  const previousVendorId = record.vendorId;
+  record.vendorId = vendor.id;
+  record.vendorName = vendor.name;
+  record.purchaseInvoiceNo = await nextPurchaseInvoiceNo(vendor.id);
+  return previousVendorId;
+};
+
+// Manager: edit fields / line items, or move the bill to another vendor (vendorName).
 router.patch('/:id', requireManager, async (req, res) => {
   const record = await findRecord(req.params.id);
   record.set(pick(req.body));
+  const leftVendorId = await moveToVendor(record, req.body.vendorName);
   if ('items' in req.body) record.items = await buildLines(req.body.items, { createItems: true });
   await attachPreviousPrices(record);
-  res.json(await commit(record, req.user));
+  const saved = await commit(record, req.user);
+  if (leftVendorId) await recalcVendorTotals(leftVendorId);
+  res.json(saved);
 });
 
 // Manager: verification actions from the inspector.
@@ -175,12 +198,12 @@ router.patch('/:id', requireManager, async (req, res) => {
 router.post('/:id/status', requireManager, async (req, res) => {
   const record = await findRecord(req.params.id);
   const { status, payment = {}, changes } = req.body;
+  let leftVendorId = null;
   if (changes) {
     record.set(pick(changes));
-    if ('items' in changes) {
-      record.items = await buildLines(changes.items);
-      await attachPreviousPrices(record);
-    }
+    leftVendorId = await moveToVendor(record, changes.vendorName);
+    if ('items' in changes) record.items = await buildLines(changes.items);
+    if (leftVendorId || 'items' in changes) await attachPreviousPrices(record);
   }
 
   if (status === 'FLAGGED') {
@@ -199,7 +222,9 @@ router.post('/:id/status', requireManager, async (req, res) => {
   } else {
     throw httpError(400, 'Status must be PAID, PENDING or FLAGGED');
   }
-  res.json(await commit(record, req.user));
+  const saved = await commit(record, req.user);
+  if (leftVendorId) await recalcVendorTotals(leftVendorId);
+  res.json(saved);
 });
 
 // Manager: record a (partial) payment against a bill.
