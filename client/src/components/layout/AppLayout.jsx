@@ -19,7 +19,7 @@ const NAV = [
 
 const Brand = () => (
   <div className="flex items-center gap-2">
-    <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-8 w-8 object-contain" />
+    <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-12 w-12 object-contain" />
     <div>
       <div className="leading-tight font-semibold text-slate-900">Sugarloop</div>
       <div className="text-xs text-slate-500">Finance &amp; Billing</div>
