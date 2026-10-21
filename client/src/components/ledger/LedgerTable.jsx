@@ -199,7 +199,14 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
                   <InvoiceNo record={r} /> · {formatDate(r.receiptDate)}
                 </div>
               </div>
-              <div className="shrink-0 font-semibold tabular-nums text-slate-900">{formatCurrency(r.amount, r.currency)}</div>
+              <div className="shrink-0 text-right">
+                <div className="font-semibold tabular-nums text-slate-900">{formatCurrency(r.amount, r.currency)}</div>
+                {paymentStatus(r) === 'PARTIAL' && (
+                  <div className="text-xs font-semibold text-amber-600">
+                    {formatCurrency(r.balance ?? r.amount - r.amountPaid, r.currency)} due
+                  </div>
+                )}
+              </div>
             </div>
             <p className="line-clamp-1 text-xs text-slate-500">{itemDescription(r, CATEGORIES[r.category]?.label)}</p>
             <div className="flex flex-wrap items-center gap-2">
@@ -247,7 +254,14 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
                 <td className="max-w-80 px-4 py-2.5 text-slate-600">
                   <span className="line-clamp-2">{itemDescription(r, CATEGORIES[r.category]?.label)}</span>
                 </td>
-                <td className="px-4 py-2.5 text-right font-medium whitespace-nowrap tabular-nums">{formatCurrency(r.amount, r.currency)}</td>
+                <td className="px-4 py-2.5 text-right font-medium whitespace-nowrap tabular-nums">
+                  {formatCurrency(r.amount, r.currency)}
+                  {paymentStatus(r) === 'PARTIAL' && (
+                    <div className="text-xs font-semibold text-amber-600">
+                      {formatCurrency(r.balance ?? r.amount - r.amountPaid, r.currency)} due
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-2.5 whitespace-nowrap">
                   <BillBadge record={r} />
                 </td>
