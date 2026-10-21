@@ -1,7 +1,7 @@
 import Vendor from '../models/Vendor.js';
 import { httpError } from '../middleware/errorHandler.js';
 
-const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Next free vendor code, e.g. VND-1011 (same scheme as the vendor form and seed).
 const nextVendorCode = async () => {
