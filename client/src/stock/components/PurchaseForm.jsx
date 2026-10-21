@@ -80,6 +80,12 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   }, []);
 
   const editing = Boolean(record);
+  const { refs, focus, nextOnEnter, saveRef } = useEntryKeys(
+    ['date', 'vendor', 'invoice', 'product', 'unit', 'quantity', 'price', 'amount'],
+    editing ? 'product' : 'date'
+  );
+  const canPay = !editing && can('recordPayment');
+  const vendor = findVendorByName(vendors, form.vendorName);
 
   // Live duplicate-invoice warning: check the typed invoice number against existing records.
   const dupBill = useMemo(() => {
@@ -93,13 +99,6 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
         String(r.invoiceNumber ?? '').trim().toLowerCase() === inv.toLowerCase()
     ) ?? null;
   }, [form.invoiceNumber, vendor, records, record?.id]);
-
-  const { refs, focus, nextOnEnter, saveRef } = useEntryKeys(
-    ['date', 'vendor', 'invoice', 'product', 'unit', 'quantity', 'price', 'amount'],
-    editing ? 'product' : 'date'
-  );
-  const canPay = !editing && can('recordPayment');
-  const vendor = findVendorByName(vendors, form.vendorName);
   const itemById = new Map(items.map((i) => [i.id, i]));
   const total = linesTotal(form.items);
   const totalQty = form.items.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
