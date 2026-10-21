@@ -9,11 +9,13 @@ import PeriodFilters, { defaultPeriod, periodLabel } from '../components/PeriodF
 
 const sum = (list) => list.reduce((total, x) => total + (x.amount ?? 0), 0);
 
-// [vendorName, bills] pairs, vendors A–Z, each vendor's bills by date.
+// [vendorName, bills] pairs, vendors A–Z, each vendor's bills oldest-first.
 const byVendor = (bills) => {
   const groups = new Map();
   for (const b of bills) groups.set(b.vendorName, [...(groups.get(b.vendorName) ?? []), b]);
-  return [...groups].sort(([a], [b]) => a.localeCompare(b));
+  return [...groups]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, vBills]) => [name, [...vBills].sort((a, b) => new Date(a.receiptDate) - new Date(b.receiptDate))]);
 };
 
 // Print Purchase: every bill in a period vendor-wise with its products, then the returns.

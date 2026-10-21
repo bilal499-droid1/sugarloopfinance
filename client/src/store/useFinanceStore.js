@@ -20,6 +20,7 @@ export const useFinanceStore = create((set, get) => ({
   // Global filters
   selectedVendorId: 'ALL',
   selectedCategory: 'ALL',
+  selectedPaymentStatus: 'ALL',
   dateRange: { from: '', to: '' },
   inspectedRecordId: null,
 
@@ -32,6 +33,7 @@ export const useFinanceStore = create((set, get) => ({
   setSelectedVendor: (selectedVendorId) => set({ selectedVendorId }),
   setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setDateRange: (dateRange) => set({ dateRange }),
+  setSelectedPaymentStatus: (selectedPaymentStatus) => set({ selectedPaymentStatus }),
   openInspector: (inspectedRecordId) => set({ inspectedRecordId }),
   closeInspector: () => set({ inspectedRecordId: null }),
 

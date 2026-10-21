@@ -3,6 +3,7 @@ import { useFinanceStore, findPreviousPrice } from '../../store/useFinanceStore'
 import { formatCurrency, formatNumber } from '../../utils/format';
 import { emptyLine, lineAmount } from '../invoice/LineItemsEditor';
 import PriceChange from '../common/PriceChange';
+import ItemCombobox from '../common/ItemCombobox';
 
 // Compact, stacked version of LineItemsEditor for the narrow Upload Bill form:
 // item · qty · unit price per line, with the line amount and the change vs this
@@ -11,6 +12,7 @@ export default function QuickItemsEditor({ lines, onChange, vendorId, receiptDat
   const items = useFinanceStore((s) => s.items);
   const records = useFinanceStore((s) => s.records);
   const itemById = new Map(items.map((i) => [i.id, i]));
+  // items used only for itemById lookup here; ItemCombobox handles creation internally
 
   const update = (index, patch) => onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   const remove = (index) => onChange(lines.filter((_, i) => i !== index));
@@ -24,14 +26,11 @@ export default function QuickItemsEditor({ lines, onChange, vendorId, receiptDat
         return (
           <div key={index} className="space-y-1.5 rounded-md border border-slate-200 p-2">
             <div className="flex gap-1.5">
-              <select className={`${input} mt-0 flex-1`} value={line.itemId} onChange={(e) => update(index, { itemId: e.target.value })} aria-label="Item">
-                <option value="">Select item…</option>
-                {items.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}{i.unit && ` (${i.unit})`}
-                  </option>
-                ))}
-              </select>
+              <ItemCombobox
+                itemId={line.itemId}
+                onChange={(id) => update(index, { itemId: id })}
+                className={`${input} mt-0 flex-1`}
+              />
               <button type="button" onClick={() => remove(index)} className="rounded p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label="Remove item">
                 <Trash2 className="h-4 w-4" />
               </button>

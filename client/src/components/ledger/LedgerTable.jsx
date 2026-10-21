@@ -67,16 +67,27 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
   const [editingId, setEditingId] = useState(null);
   const allRecords = useFinanceStore((s) => s.records);
   const flashIds = useFinanceStore((s) => s.flashIds);
+  const storePaymentStatus = useFinanceStore((s) => s.selectedPaymentStatus);
   const flashRef = useRef(null); // table row (tablet / desktop)
   const flashCardRef = useRef(null); // card (phone)
   const [query, setQuery] = useState('');
   const [payment, setPayment] = useState('ALL');
   const [sortBy, setSortBy] = useState('date');
 
+  // Sync payment filter from dashboard stat-card clicks (dashboard mode only, not vendor detail).
+  useEffect(() => {
+    if (!vendorId) setPayment(storePaymentStatus);
+  }, [storePaymentStatus, vendorId]);
+
   const rows = useMemo(() => {
     const q = query.toLowerCase();
+    const matchesPayment = (r) => {
+      if (payment === 'ALL') return true;
+      if (payment === 'OUTSTANDING') return paymentStatus(r) === 'UNPAID' || paymentStatus(r) === 'PARTIAL';
+      return paymentStatus(r) === payment;
+    };
     return records
-      .filter((r) => payment === 'ALL' || paymentStatus(r) === payment)
+      .filter(matchesPayment)
       .filter(
         (r) =>
           !q ||
@@ -132,7 +143,7 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
     `rounded-full border px-3 py-1 text-xs font-medium ${active ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-400'}`;
 
   return (
-    <section className="min-w-0 rounded-xl border border-slate-200 bg-white">
+    <section id="ledger" className="min-w-0 rounded-xl border border-slate-200 bg-white">
       <div className="space-y-3 border-b border-slate-200 p-4">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="mr-auto font-semibold text-slate-900">
@@ -163,6 +174,11 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
               {PAYMENT_STATUSES[key].label} ({counts[key] ?? 0})
             </button>
           ))}
+          {payment === 'OUTSTANDING' && (
+            <button onClick={() => setPayment('OUTSTANDING')} className={chip(true)}>
+              Outstanding ({(counts.UNPAID ?? 0) + (counts.PARTIAL ?? 0)})
+            </button>
+          )}
         </div>
       </div>
 

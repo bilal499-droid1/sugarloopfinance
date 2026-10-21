@@ -2,6 +2,7 @@ import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { useFinanceStore, findPreviousPrice } from '../../store/useFinanceStore';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import PriceChange from '../common/PriceChange';
+import ItemCombobox from '../common/ItemCombobox';
 
 export const emptyLine = () => ({ itemId: '', quantity: '', unitPrice: '' });
 export const lineAmount = (line) => Math.round((Number(line.quantity) || 0) * (Number(line.unitPrice) || 0) * 100) / 100;
@@ -50,19 +51,19 @@ export default function LineItemsEditor({ lines, onChange, vendorId, receiptDate
             return (
               <tr key={index} className="border-t border-slate-100 align-top">
                 <td className="min-w-44 px-2 py-1.5">
-                  <select
-                    className={cell}
-                    value={line.itemId}
-                    disabled={readOnly}
-                    onChange={(e) => update(index, { itemId: e.target.value, previousUnitPrice: undefined })}
-                  >
-                    <option value="">Select item…</option>
-                    {items.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}{i.unit && ` (${i.unit})`}
-                      </option>
-                    ))}
-                  </select>
+                  {readOnly ? (
+                    <input
+                      className={cell}
+                      value={item?.name ?? ''}
+                      disabled
+                    />
+                  ) : (
+                    <ItemCombobox
+                      itemId={line.itemId}
+                      onChange={(id) => update(index, { itemId: id, previousUnitPrice: undefined })}
+                      className={cell}
+                    />
+                  )}
                 </td>
                 <td className="px-2 py-2.5 whitespace-nowrap">
                   {item ? (
