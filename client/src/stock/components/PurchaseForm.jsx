@@ -5,6 +5,7 @@ import api, { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
 import { findVendorByName } from '../../utils/vendors';
 import { PAYMENT_METHODS, formatCurrency, formatDate, formatNumber, today, toDateInput } from '../../utils/format';
+import { CATEGORIES, CATEGORY_KEYS } from '../../utils/categories';
 import Field, { inputClass, buttonClass } from '../../components/common/Field';
 import PriceChange from '../../components/common/PriceChange';
 import { lineAmount, linesTotal } from '../../components/invoice/LineItemsEditor';
@@ -32,6 +33,7 @@ export const purchaseFromRecord = (record) => ({
   invoiceNumber: record.invoiceNumber ?? '',
   notes: record.notes ?? '',
   billAvailable: record.billAvailable !== false,
+  category: record.category ?? 'RAW_PROCUREMENT',
   items: record.items.map(({ itemId, quantity, unitPrice, previousUnitPrice }) => ({ itemId, quantity, unitPrice, previousUnitPrice })),
 });
 
@@ -244,6 +246,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       receiptDate: form.receiptDate,
       notes: form.notes,
       billAvailable: form.billAvailable,
+      ...(editing && form.category && { category: form.category }),
       items: form.items.map(({ itemId, itemName, unit, quantity, unitPrice }) => ({
         ...(itemId ? { itemId } : { itemName, unit }),
         quantity: Number(quantity),
@@ -328,6 +331,15 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
             </p>
           )}
         </Field>
+        {editing && (
+          <Field label="Category" className="sm:col-span-2">
+            <select className={inputClass} value={form.category ?? ''} onChange={set('category')}>
+              {CATEGORY_KEYS.map((key) => (
+                <option key={key} value={key}>{CATEGORIES[key].label}</option>
+              ))}
+            </select>
+          </Field>
+        )}
       </div>
 
       {/* ---- Product detail (entry bar) ---- */}
