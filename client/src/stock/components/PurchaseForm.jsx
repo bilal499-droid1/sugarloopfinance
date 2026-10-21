@@ -159,7 +159,8 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   const pickProduct = (option) => {
     if (!option) return newProduct && focus('unit');
     const last = lastPrice(option.id);
-    setEntry((en) => fillEntry({ ...en, itemId: option.id, search: option.label }, 'unitPrice', en.editIndex !== null ? en.unitPrice : String(last ?? '')));
+    const itemUnit = items.find((i) => i.id === option.id)?.unit ?? '';
+    setEntry((en) => fillEntry({ ...en, itemId: option.id, search: option.label, unit: itemUnit }, 'unitPrice', en.editIndex !== null ? en.unitPrice : String(last ?? '')));
     focus('quantity');
   };
   const setEntryField = (field) => (e) => setEntry((en) => fillEntry(en, field, e.target.value));
@@ -186,7 +187,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       setError('Enter the price.');
       return focus('price');
     }
-    const product = itemId ? { itemId } : { itemId: '', itemName: name, unit: entry.unit };
+    const product = itemId ? { itemId, unit: entry.unit } : { itemId: '', itemName: name, unit: entry.unit };
     const line = { ...product, quantity: Number(entry.quantity), unitPrice: Number(entry.unitPrice) };
     setForm((f) => ({
       ...f,
@@ -203,7 +204,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       ...blankEntry,
       itemId: line.itemId,
       search: itemById.get(line.itemId)?.name ?? line.itemName ?? '',
-      unit: line.unit ?? blankEntry.unit,
+      unit: line.unit ?? itemById.get(line.itemId)?.unit ?? blankEntry.unit,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
       amount: String(lineAmount(line)),
@@ -372,8 +373,21 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               }
             />
             {entryItem && (
-              <span className="mt-1 block text-xs text-slate-500">
-                In hand <strong className="text-slate-800">{formatNumber(entryItem.inHand)} {entryItem.unit}</strong>
+              <span className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                In hand <strong className="text-slate-800">{formatNumber(entryItem.inHand)}</strong>
+                <span className="text-slate-300">·</span> Unit
+                <select
+                  ref={refs.unit}
+                  className="rounded border border-slate-300 bg-white px-1 py-0.5 text-xs text-slate-800"
+                  value={entry.unit}
+                  onChange={(e) => setEntry({ ...entry, unit: e.target.value })}
+                  onKeyDown={nextOnEnter('quantity')}
+                >
+                  <option value="">No unit</option>
+                  {units.map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
               </span>
             )}
             {newProduct &&
@@ -525,7 +539,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
                     {item?.name ?? line.itemName ?? '—'}
                     {!item && line.itemName && <span className="ml-1.5 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-normal text-emerald-700">new</span>}
                   </td>
-                  <td className="px-2 py-1.5 text-slate-600">{item?.unit ?? line.unit}</td>
+                  <td className="px-2 py-1.5 text-slate-600">{line.unit || item?.unit}</td>
                   <td className="px-2 py-1.5 text-right">{formatNumber(line.quantity)}</td>
                   <td className="px-2 py-1.5 text-right">{formatNumber(line.unitPrice)}</td>
                   <td className="px-2 py-1.5">
