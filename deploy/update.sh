@@ -16,8 +16,10 @@ npm run build --prefix client
 rsync -a --delete client/dist/ /var/www/sugarloop/
 
 cd server
-pm2 describe sugarloop-api >/dev/null 2>&1 && pm2 restart sugarloop-api || pm2 start src/index.js --name sugarloop-api
+# Always delete and re-start so PM2 runs from this directory, not a stale path.
+pm2 delete sugarloop-api 2>/dev/null || true
+pm2 start src/index.js --name sugarloop-api
 pm2 save
 
-sleep 2
+sleep 3
 curl -fsS http://127.0.0.1:5000/api/health && echo " — API is up"
