@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Croissant, LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useCan, ROLE_LABELS } from '../../utils/permissions';
@@ -19,7 +19,7 @@ const NAV = [
 
 const Brand = () => (
   <div className="flex items-center gap-2">
-    <Croissant className="h-7 w-7 text-amber-600" />
+    <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-8 w-8 object-contain" />
     <div>
       <div className="leading-tight font-semibold text-slate-900">Sugarloop</div>
       <div className="text-xs text-slate-500">Finance &amp; Billing</div>
