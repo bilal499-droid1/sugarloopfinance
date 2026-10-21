@@ -18,6 +18,7 @@ export const blankPurchase = (receiptDate = today()) => ({
   vendorName: '',
   invoiceNumber: '',
   notes: '',
+  billAvailable: true,
   items: [],
   verify: false,
   payMode: 'FULL', // CREDIT (pay later) | FULL | PARTIAL, as on the old POS
@@ -30,6 +31,7 @@ export const purchaseFromRecord = (record) => ({
   vendorName: record.vendorName,
   invoiceNumber: record.invoiceNumber ?? '',
   notes: record.notes ?? '',
+  billAvailable: record.billAvailable !== false,
   items: record.items.map(({ itemId, quantity, unitPrice, previousUnitPrice }) => ({ itemId, quantity, unitPrice, previousUnitPrice })),
 });
 
@@ -228,6 +230,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       invoiceNumber: form.invoiceNumber,
       receiptDate: form.receiptDate,
       notes: form.notes,
+      billAvailable: form.billAvailable,
       items: form.items.map(({ itemId, itemName, unit, quantity, unitPrice }) => ({
         ...(itemId ? { itemId } : { itemName, unit }),
         quantity: Number(quantity),
@@ -538,6 +541,19 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
           <Field label="Remarks">
             <textarea rows={2} className={inputClass} value={form.notes} onChange={set('notes')} />
           </Field>
+          <div>
+            <span className="text-xs font-medium text-slate-500 uppercase">Bill available?</span>
+            <div className="mt-1.5 flex gap-5 text-sm">
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="billAvailable" checked={form.billAvailable !== false} onChange={() => setForm({ ...form, billAvailable: true })} />
+                Yes
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="billAvailable" checked={form.billAvailable === false} onChange={() => setForm({ ...form, billAvailable: false })} />
+                No bill
+              </label>
+            </div>
+          </div>
           {editing
             ? record.verified && (
                 <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">

@@ -227,6 +227,20 @@ export default function VerificationDrawer() {
               <textarea rows={2} className={inputClass} value={form.notes ?? ''} onChange={set('notes')} disabled={readOnly} />
             </label>
 
+            <div>
+              <span className="text-xs font-medium text-slate-500 uppercase">Bill available?</span>
+              <div className="mt-1.5 flex gap-5 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="drawer-billAvailable" checked={form.billAvailable !== false} disabled={readOnly} onChange={() => setForm({ ...form, billAvailable: true })} />
+                  Yes
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="drawer-billAvailable" checked={form.billAvailable === false} disabled={readOnly} onChange={() => setForm({ ...form, billAvailable: false })} />
+                  No bill
+                </label>
+              </div>
+            </div>
+
             <PaymentsPanel record={record} />
           </div>
 
