@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useFinanceStore, findPreviousPrice } from '../../store/useFinanceStore';
 import api, { errorMessage } from '../../api/client';
@@ -80,6 +80,20 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   }, []);
 
   const editing = Boolean(record);
+
+  // Live duplicate-invoice warning: check the typed invoice number against existing records.
+  const dupBill = useMemo(() => {
+    const inv = form.invoiceNumber.trim();
+    if (!inv || !vendor) return null;
+    return records.find(
+      (r) =>
+        r.id !== record?.id &&
+        r.status !== 'FLAGGED' &&
+        r.vendorId === vendor.id &&
+        String(r.invoiceNumber ?? '').trim().toLowerCase() === inv.toLowerCase()
+    ) ?? null;
+  }, [form.invoiceNumber, vendor, records, record?.id]);
+
   const { refs, focus, nextOnEnter, saveRef } = useEntryKeys(
     ['date', 'vendor', 'invoice', 'product', 'unit', 'quantity', 'price', 'amount'],
     editing ? 'product' : 'date'
@@ -308,7 +322,12 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
           )}
         </Field>
         <Field label="Vendor Inv #" className="sm:col-span-2">
-          <input ref={refs.invoice} className={inputClass} value={form.invoiceNumber} onChange={set('invoiceNumber')} onKeyDown={nextOnEnter('product')} />
+          <input ref={refs.invoice} className={`${inputClass} ${dupBill ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200' : ''}`} value={form.invoiceNumber} onChange={set('invoiceNumber')} onKeyDown={nextOnEnter('product')} />
+          {dupBill && (
+            <p className="mt-1 text-xs text-rose-600">
+              Duplicate — this invoice number was already entered on {new Date(dupBill.receiptDate).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}.
+            </p>
+          )}
         </Field>
       </div>
 
