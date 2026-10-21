@@ -137,6 +137,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       createdBy: req.user.name,
       ...(imageUrl && { imageUrl }),
     });
+    await checkDuplicateInvoice(record.invoiceNumber, vendor.id);
     await attachPreviousPrices(record);
     if (isManager && body.verify) markVerified(record, req.user);
     if (isManager && body.payment) {
@@ -158,6 +159,19 @@ router.post('/', upload.single('image'), async (req, res) => {
 });
 
 const sameName = (a, b) => String(a ?? '').trim().replace(/\s+/g, ' ').toLowerCase() === String(b ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+// Reject if this vendor already has a non-flagged bill with the same invoice number.
+const checkDuplicateInvoice = async (invoiceNumber, vendorId, excludeId = null) => {
+  const inv = String(invoiceNumber ?? '').trim();
+  if (!inv) return;
+  const query = { invoiceNumber: inv, vendorId, flagged: { $ne: true } };
+  if (excludeId) query._id = { $ne: excludeId };
+  const existing = await BillingRecord.findOne(query).select('invoiceNumber vendorName receiptDate');
+  if (existing) {
+    const date = existing.receiptDate ? new Date(existing.receiptDate).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+    throw httpError(409, `Invoice #${inv} already exists for this supplier${date ? ` (billed on ${date})` : ''}. Remove the duplicate or change the invoice number.`);
+  }
+};
 
 // Move a bill to the vendor named in an edit (found or created) when it names a different
 // one. The bill takes its payments along and gets a purchase invoice number from its new
@@ -182,6 +196,7 @@ router.patch('/:id', requireManager, async (req, res) => {
   record.set(pick(req.body));
   const leftVendorId = await moveToVendor(record, req.body.vendorName);
   if ('items' in req.body) record.items = await buildLines(req.body.items, { createItems: true });
+  await checkDuplicateInvoice(record.invoiceNumber, record.vendorId, record._id);
   await attachPreviousPrices(record);
   const saved = await commit(record, req.user);
   if (leftVendorId) await recalcVendorTotals(leftVendorId);

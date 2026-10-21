@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -29,6 +29,7 @@ const toForm = (record) => ({
 
 export default function VerificationDrawer() {
   const record = useFinanceStore((s) => s.records.find((r) => r.id === s.inspectedRecordId));
+  const allRecords = useFinanceStore((s) => s.records);
   const closeInspector = useFinanceStore((s) => s.closeInspector);
   const updateRecord = useFinanceStore((s) => s.updateRecord);
   const setRecordStatus = useFinanceStore((s) => s.setRecordStatus);
@@ -54,6 +55,19 @@ export default function VerificationDrawer() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [closeInspector]);
+
+  const dupBill = useMemo(() => {
+    if (!form || !record) return null;
+    const inv = String(form.invoiceNumber ?? '').trim();
+    if (!inv) return null;
+    return allRecords.find(
+      (r) =>
+        r.id !== record.id &&
+        r.status !== 'FLAGGED' &&
+        r.vendorId === record.vendorId &&
+        String(r.invoiceNumber ?? '').trim().toLowerCase() === inv.toLowerCase()
+    ) ?? null;
+  }, [form?.invoiceNumber, record?.id, record?.vendorId, allRecords]);
 
   if (!record || !form) return null;
 
@@ -192,7 +206,12 @@ export default function VerificationDrawer() {
               </label>
               <label className="block">
                 Invoice No
-                <input className={inputClass} value={form.invoiceNumber ?? ''} onChange={set('invoiceNumber')} disabled={readOnly} />
+                <input className={`${inputClass} ${dupBill ? 'border-rose-400' : ''}`} value={form.invoiceNumber ?? ''} onChange={set('invoiceNumber')} disabled={readOnly} />
+                {dupBill && (
+                  <span className="mt-1 block text-xs text-rose-600">
+                    Duplicate — already entered on {new Date(dupBill.receiptDate).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}.
+                  </span>
+                )}
               </label>
               <label className="block">
                 Receipt date
