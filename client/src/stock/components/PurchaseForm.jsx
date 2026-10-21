@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useFinanceStore, findPreviousPrice } from '../../store/useFinanceStore';
-import { errorMessage } from '../../api/client';
+import api, { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
 import { findVendorByName } from '../../utils/vendors';
 import { PAYMENT_METHODS, formatCurrency, formatDate, formatNumber, today, toDateInput } from '../../utils/format';
@@ -34,7 +33,21 @@ export const purchaseFromRecord = (record) => ({
   items: record.items.map(({ itemId, quantity, unitPrice, previousUnitPrice }) => ({ itemId, quantity, unitPrice, previousUnitPrice })),
 });
 
-const blankEntry = { itemId: '', search: '', quantity: '', unitPrice: '', editIndex: null };
+// `unit` is only used for a product that isn't in Inventory yet.
+const blankEntry = { itemId: '', search: '', unit: 'kg', quantity: '', unitPrice: '', amount: '', byAmount: false, editIndex: null };
+
+// Quantity × Price = Amount, filled in as you type: a Price works out the Amount and
+// an Amount works out the Price, whichever was typed last (`byAmount`).
+const fillEntry = (entry, field, value) => {
+  const next = { ...entry, [field]: value };
+  if (field === 'amount') next.byAmount = value !== '';
+  if (field === 'unitPrice') next.byAmount = false;
+  const qty = Number(next.quantity);
+  if (!(qty > 0) || (field === 'amount' && value === '')) return next;
+  if (next.byAmount) next.unitPrice = String(Math.round((Number(next.amount) / qty) * 10000) / 10000);
+  else next.amount = next.unitPrice === '' ? '' : String(lineAmount(next));
+  return next;
+};
 
 // Latest purchases of an item (any vendor), newest first, for the history strip.
 const purchaseHistory = (records, itemId, excludeId) =>
@@ -58,10 +71,15 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   const [entry, setEntry] = useState(blankEntry);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [units, setUnits] = useState(['kg']);
+
+  useEffect(() => {
+    api.get('/items/units').then((res) => setUnits(res.data));
+  }, []);
 
   const editing = Boolean(record);
   const { refs, focus, nextOnEnter, saveRef } = useEntryKeys(
-    ['date', 'vendor', 'invoice', 'product', 'quantity', 'price'],
+    ['date', 'vendor', 'invoice', 'product', 'unit', 'quantity', 'price', 'amount'],
     editing ? 'product' : 'date'
   );
   const canPay = !editing && can('recordPayment');
@@ -108,18 +126,32 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   ];
 
   // ---- Product entry ----
+  // A typed name that matches no product is a new one: it goes on the bill and is
+  // added to Inventory when the bill is saved (managers/admins only, like vendors).
+  const typed = entry.search.trim().toLowerCase();
+  const newProduct = !entry.itemId && Boolean(typed) && !productOptions.some((o) => o.search.includes(typed));
+  const canAddProduct = can('manageItems');
+
   const pickProduct = (option) => {
-    if (!option) return;
+    if (!option) return newProduct && focus('unit');
     const last = lastPrice(option.id);
-    setEntry((en) => ({ ...en, itemId: option.id, search: option.label, unitPrice: en.editIndex !== null ? en.unitPrice : last ?? '' }));
+    setEntry((en) => fillEntry({ ...en, itemId: option.id, search: option.label }, 'unitPrice', en.editIndex !== null ? en.unitPrice : String(last ?? '')));
     focus('quantity');
   };
+  const setEntryField = (field) => (e) => setEntry((en) => fillEntry(en, field, e.target.value));
 
   const commitEntry = () => {
     // A product typed but not picked from the list (e.g. clicked away) still counts.
     const itemId = entry.itemId || findTyped(productOptions, entry.search)?.id;
-    if (!itemId) {
-      setError(entry.search.trim() ? `No single product matches "${entry.search.trim()}" — pick one from the list.` : 'Pick a product.');
+    const name = entry.search.trim().replace(/\s+/g, ' ');
+    if (!itemId && !(newProduct && canAddProduct)) {
+      setError(
+        !name
+          ? 'Pick a product.'
+          : newProduct
+            ? `"${name}" isn't in Inventory. Ask a manager to add it.`
+            : `No single product matches "${name}" — pick one from the list.`
+      );
       return focus('product');
     }
     if (!(Number(entry.quantity) > 0)) {
@@ -130,7 +162,8 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       setError('Enter the price.');
       return focus('price');
     }
-    const line = { itemId, quantity: Number(entry.quantity), unitPrice: Number(entry.unitPrice) };
+    const product = itemId ? { itemId } : { itemId: '', itemName: name, unit: entry.unit };
+    const line = { ...product, quantity: Number(entry.quantity), unitPrice: Number(entry.unitPrice) };
     setForm((f) => ({
       ...f,
       items: entry.editIndex === null ? [...f.items, line] : f.items.map((l, i) => (i === entry.editIndex ? line : l)),
@@ -142,7 +175,16 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
 
   const editLine = (index) => {
     const line = form.items[index];
-    setEntry({ itemId: line.itemId, search: itemById.get(line.itemId)?.name ?? '', quantity: line.quantity, unitPrice: line.unitPrice, editIndex: index });
+    setEntry({
+      ...blankEntry,
+      itemId: line.itemId,
+      search: itemById.get(line.itemId)?.name ?? line.itemName ?? '',
+      unit: line.unit ?? blankEntry.unit,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      amount: String(lineAmount(line)),
+      editIndex: index,
+    });
     focus('quantity');
   };
 
@@ -179,7 +221,11 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       invoiceNumber: form.invoiceNumber,
       receiptDate: form.receiptDate,
       notes: form.notes,
-      items: form.items.map(({ itemId, quantity, unitPrice }) => ({ itemId, quantity: Number(quantity), unitPrice: Number(unitPrice) })),
+      items: form.items.map(({ itemId, itemName, unit, quantity, unitPrice }) => ({
+        ...(itemId ? { itemId } : { itemName, unit }),
+        quantity: Number(quantity),
+        unitPrice: Number(unitPrice),
+      })),
     };
     const paying = canPay && form.payMode !== 'CREDIT';
 
@@ -206,7 +252,6 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
 
   const entryItem = itemById.get(entry.itemId);
   const history = entry.itemId ? purchaseHistory(records, entry.itemId, record?.id) : [];
-  const entryAmount = lineAmount(entry);
   const label = 'text-xs font-medium text-slate-500 uppercase';
 
   return (
@@ -269,7 +314,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
           )}
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-12">
-          <Field label="Product" className="col-span-2 sm:col-span-5">
+          <Field label="Product" className="col-span-2 sm:col-span-4">
             <SearchPicker
               ref={refs.product}
               value={entry.search}
@@ -278,17 +323,13 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               options={productOptions}
               columns={productColumns}
               placeholder="Type to search products"
+              allowNew={canAddProduct}
               emptyText={
-                <>
-                  {entry.search.trim() ? `No product matches "${entry.search.trim()}". ` : 'No products yet. '}
-                  {can('manageItems') ? (
-                    <Link to="/inventory" onMouseDown={(e) => e.preventDefault()} className="font-medium text-indigo-600 underline">
-                      Add it in Inventory
-                    </Link>
-                  ) : (
-                    'Ask a manager to add it in Inventory.'
-                  )}
-                </>
+                !typed
+                  ? `No products yet. ${canAddProduct ? 'Type a name to add one.' : 'Ask a manager to add them.'}`
+                  : canAddProduct
+                    ? `New product — "${entry.search.trim()}" will be added to Inventory when you save.`
+                    : `No product matches "${entry.search.trim()}". Ask a manager to add it.`
               }
             />
             {entryItem && (
@@ -296,8 +337,27 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
                 In hand <strong className="text-slate-800">{formatNumber(entryItem.inHand)} {entryItem.unit}</strong>
               </span>
             )}
+            {newProduct &&
+              (canAddProduct ? (
+                <span className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  New product — added to Inventory on save. Unit
+                  <select
+                    ref={refs.unit}
+                    className="rounded border border-slate-300 bg-white px-1 py-0.5 text-xs text-slate-800"
+                    value={entry.unit}
+                    onChange={(e) => setEntry({ ...entry, unit: e.target.value })}
+                    onKeyDown={nextOnEnter('quantity')}
+                  >
+                    {units.map((u) => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                </span>
+              ) : (
+                <span className="mt-1 block text-xs text-rose-600">Not in Inventory. Ask a manager to add this product.</span>
+              ))}
           </Field>
-          <Field label={`Quantity${entryItem ? ` (${entryItem.unit})` : ''}`} className="sm:col-span-2">
+          <Field label={`Quantity${entryItem ? ` (${entryItem.unit})` : newProduct ? ` (${entry.unit})` : ''}`} className="sm:col-span-2">
             <input
               ref={refs.quantity}
               type="number"
@@ -305,7 +365,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               step="any"
               className={inputClass}
               value={entry.quantity}
-              onChange={(e) => setEntry({ ...entry, quantity: e.target.value })}
+              onChange={setEntryField('quantity')}
               onKeyDown={nextOnEnter('price')}
               onFocus={(e) => e.target.select()}
             />
@@ -318,7 +378,27 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               step="any"
               className={inputClass}
               value={entry.unitPrice}
-              onChange={(e) => setEntry({ ...entry, unitPrice: e.target.value })}
+              onChange={setEntryField('unitPrice')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  // No price yet: go to Amount so the price can be worked out from it.
+                  if (entry.unitPrice === '') focus('amount');
+                  else commitEntry();
+                }
+              }}
+              onFocus={(e) => e.target.select()}
+            />
+          </Field>
+          <Field label="Amount" className="sm:col-span-2">
+            <input
+              ref={refs.amount}
+              type="number"
+              min="0"
+              step="any"
+              className={inputClass}
+              value={entry.amount}
+              onChange={setEntryField('amount')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -328,12 +408,8 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               onFocus={(e) => e.target.select()}
             />
           </Field>
-          <div className="col-span-2 flex items-end justify-between gap-2 sm:col-span-3">
-            <div className="pb-1.5 text-sm">
-              <div className={label}>Amount</div>
-              <strong>{entryAmount ? formatNumber(entryAmount) : '—'}</strong>
-            </div>
-            <button type="button" onClick={commitEntry} className={buttonClass.secondary}>
+          <div className="col-span-2 flex items-end sm:col-span-2">
+            <button type="button" onClick={commitEntry} className={`${buttonClass.secondary} w-full`}>
               {entry.editIndex === null ? 'Add' : 'Update'}
             </button>
           </div>
@@ -373,14 +449,9 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
           </div>
         )}
         <p className="text-xs text-slate-500">
-          Enter moves to the next box; Enter on Price adds the line. Product missing?{' '}
-          {can('manageItems') ? (
-            <Link to="/inventory" className="underline">
-              Add it in Inventory
-            </Link>
-          ) : (
-            'Ask a manager to add it.'
-          )}
+          Enter moves to the next box; Enter on Price adds the line. Price and Amount fill each other in — leave Price empty and press Enter to type the
+          Amount instead.{' '}
+          {canAddProduct ? 'A product not in the list is added to Inventory when you save.' : 'Product missing? Ask a manager to add it.'}
         </p>
       </div>
 
@@ -410,8 +481,11 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
                   className={`border-t border-slate-100 ${entry.editIndex === index ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
                 >
                   <td className="px-2 py-1.5 text-slate-500">{index + 1}</td>
-                  <td className="px-2 py-1.5 font-medium text-slate-900">{item?.name ?? '—'}</td>
-                  <td className="px-2 py-1.5 text-slate-600">{item?.unit}</td>
+                  <td className="px-2 py-1.5 font-medium text-slate-900">
+                    {item?.name ?? line.itemName ?? '—'}
+                    {!item && line.itemName && <span className="ml-1.5 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-normal text-emerald-700">new</span>}
+                  </td>
+                  <td className="px-2 py-1.5 text-slate-600">{item?.unit ?? line.unit}</td>
                   <td className="px-2 py-1.5 text-right">{formatNumber(line.quantity)}</td>
                   <td className="px-2 py-1.5 text-right">{formatNumber(line.unitPrice)}</td>
                   <td className="px-2 py-1.5">
