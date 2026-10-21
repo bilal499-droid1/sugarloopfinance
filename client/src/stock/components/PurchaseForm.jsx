@@ -20,8 +20,8 @@ export const blankPurchase = (receiptDate = today()) => ({
   notes: '',
   items: [],
   verify: false,
-  payMode: 'CREDIT', // CREDIT (pay later) | FULL | PARTIAL, as on the old POS
-  payment: { date: today(), method: 'CASH', reference: '', amount: '' },
+  payMode: 'FULL', // CREDIT (pay later) | FULL | PARTIAL, as on the old POS
+  payment: { date: receiptDate, method: 'CASH', reference: '', amount: '' }, // paid on the bill date unless changed
 });
 
 // A saved bill in the form's shape, for editing.
@@ -83,12 +83,19 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
     editing ? 'product' : 'date'
   );
   const canPay = !editing && can('recordPayment');
-  const vendor = editing ? vendors.find((v) => v.id === record.vendorId) : findVendorByName(vendors, form.vendorName);
+  const vendor = findVendorByName(vendors, form.vendorName);
   const itemById = new Map(items.map((i) => [i.id, i]));
   const total = linesTotal(form.items);
   const totalQty = form.items.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   const setPayment = (field) => (e) => setForm({ ...form, payment: { ...form.payment, [field]: e.target.value } });
+  // The payment date follows the bill date until it's changed by hand.
+  const setReceiptDate = (e) =>
+    setForm({
+      ...form,
+      receiptDate: e.target.value,
+      payment: form.payment.date === form.receiptDate ? { ...form.payment, date: e.target.value } : form.payment,
+    });
 
   const lastPrice = (itemId) =>
     vendor ? findPreviousPrice(records, { vendorId: vendor.id, itemId, beforeDate: form.receiptDate, excludeId: record?.id }) : undefined;
@@ -204,7 +211,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   // ---- Save ----
   const save = async () => {
     if (busy) return;
-    if (!editing && !form.vendorName.trim()) {
+    if (!form.vendorName.trim()) {
       setError('Enter the vendor.');
       return focus('vendor');
     }
@@ -233,7 +240,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
     setError('');
     try {
       const saved = editing
-        ? await updateRecord(record.id, fields)
+        ? await updateRecord(record.id, { ...fields, vendorName: form.vendorName })
         : await createRecord({
             ...fields,
             vendorName: form.vendorName,
@@ -251,6 +258,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   saveRef.current = save; // Ctrl+S
 
   const entryItem = itemById.get(entry.itemId);
+  const entryUnit = entryItem ? entryItem.unit : newProduct ? entry.unit : '';
   const history = entry.itemId ? purchaseHistory(records, entry.itemId, record?.id) : [];
   const label = 'text-xs font-medium text-slate-500 uppercase';
 
@@ -265,13 +273,12 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
       {/* ---- Bill header ---- */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
         <Field label="Dated">
-          <input ref={refs.date} type="date" required className={inputClass} value={form.receiptDate} onChange={set('receiptDate')} onKeyDown={nextOnEnter('vendor')} />
+          <input ref={refs.date} type="date" required className={inputClass} value={form.receiptDate} onChange={setReceiptDate} onKeyDown={nextOnEnter('vendor')} />
         </Field>
         <Field label="Vendor" className="sm:col-span-3">
           <SearchPicker
             ref={refs.vendor}
             value={form.vendorName}
-            disabled={editing}
             onChange={(vendorName) => setForm((f) => ({ ...f, vendorName }))}
             onPick={(option) => {
               if (option) setForm((f) => ({ ...f, vendorName: option.label }));
@@ -289,7 +296,6 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
               <span className="text-slate-400"> · {vendor.code}</span>
             </span>
           ) : (
-            !editing &&
             form.vendorName.trim() &&
             (can('manageVendors') ? (
               <span className="mt-1 block text-xs text-slate-500">New vendor — it will be added to the vendor list.</span>
@@ -348,6 +354,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
                     onChange={(e) => setEntry({ ...entry, unit: e.target.value })}
                     onKeyDown={nextOnEnter('quantity')}
                   >
+                    <option value="">No unit</option>
                     {units.map((u) => (
                       <option key={u}>{u}</option>
                     ))}
@@ -357,7 +364,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
                 <span className="mt-1 block text-xs text-rose-600">Not in Inventory. Ask a manager to add this product.</span>
               ))}
           </Field>
-          <Field label={`Quantity${entryItem ? ` (${entryItem.unit})` : newProduct ? ` (${entry.unit})` : ''}`} className="sm:col-span-2">
+          <Field label={`Quantity${entryUnit ? ` (${entryUnit})` : ''}`} className="sm:col-span-2">
             <input
               ref={refs.quantity}
               type="number"
