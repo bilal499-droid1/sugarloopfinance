@@ -70,6 +70,7 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   const records = useFinanceStore((s) => s.records);
   const createRecord = useFinanceStore((s) => s.createRecord);
   const updateRecord = useFinanceStore((s) => s.updateRecord);
+  const attachReceipt = useFinanceStore((s) => s.attachReceipt);
   const can = useCan();
   const [form, setForm] = useState(initial);
   const [entry, setEntry] = useState(blankEntry);
@@ -273,15 +274,19 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
     setBusy(true);
     setError('');
     try {
-      const saved = editing
-        ? await updateRecord(record.id, { ...fields, vendorName: form.vendorName })
-        : await createRecord({
-            ...fields,
-            vendorName: form.vendorName,
-            verify: form.verify || paying,
-            ...(file && { billAvailable: true }),
-            ...(paying && { payment: { date: form.payment.date, method: form.payment.method, reference: form.payment.reference, amount: paidAmount } }),
-          }, file);
+      let saved;
+      if (editing) {
+        saved = await updateRecord(record.id, { ...fields, vendorName: form.vendorName });
+        if (file) saved = await attachReceipt(saved.id, file);
+      } else {
+        saved = await createRecord({
+          ...fields,
+          vendorName: form.vendorName,
+          verify: form.verify || paying,
+          ...(file && { billAvailable: true }),
+          ...(paying && { payment: { date: form.payment.date, method: form.payment.method, reference: form.payment.reference, amount: paidAmount } }),
+        }, file);
+      }
       clearFile();
       onSaved(saved);
     } catch (err) {

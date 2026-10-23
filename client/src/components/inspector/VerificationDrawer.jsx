@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -40,6 +40,8 @@ export default function VerificationDrawer() {
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [draggingReceipt, setDraggingReceipt] = useState(false);
+  const receiptInputRef = useRef(null);
   // Result of the last action, tied to the bill it was for: { id, text }
   const [notice, setNotice] = useState(null);
   const [working, setWorking] = useState(null); // status being applied, for the button label
@@ -116,30 +118,63 @@ export default function VerificationDrawer() {
         className="flex h-full w-full max-w-[1500px] flex-col bg-white shadow-xl md:flex-row"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left (top on phones): the receipt, or a way to attach one when the bill has none. */}
-        <div className="flex h-[35vh] min-w-0 shrink-0 bg-gray-800 md:h-auto md:flex-1">
+        {/* Left (top on phones): the receipt image, with drag-and-drop to attach/replace. */}
+        <div
+          className={`relative flex h-[35vh] min-w-0 shrink-0 bg-gray-800 md:h-auto md:flex-1 ${!readOnly ? 'cursor-pointer' : ''} ${draggingReceipt ? 'ring-4 ring-inset ring-indigo-400' : ''}`}
+          onDragOver={(e) => { if (!readOnly) { e.preventDefault(); setDraggingReceipt(true); } }}
+          onDragLeave={() => setDraggingReceipt(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDraggingReceipt(false);
+            if (readOnly || busy) return;
+            const file = e.dataTransfer.files[0];
+            if (file) run(() => attachReceipt(record.id, file));
+          }}
+          onClick={() => { if (!readOnly && !busy && !record.imageUrl) receiptInputRef.current?.click(); }}
+          title={readOnly ? undefined : record.imageUrl ? 'Drop an image to replace the receipt' : 'Click or drop to attach receipt'}
+        >
           {record.imageUrl ? (
-            <ReceiptViewer src={record.imageUrl} />
+            <>
+              <ReceiptViewer src={record.imageUrl} />
+              {!readOnly && !draggingReceipt && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); if (!busy) receiptInputRef.current?.click(); }}
+                  className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs font-medium text-white hover:bg-black/70"
+                >
+                  <Upload className="h-3 w-3" /> Replace
+                </button>
+              )}
+            </>
           ) : (
             <div className="m-auto flex max-w-xs flex-col items-center gap-3 p-6 text-center text-gray-300">
               <ImageOff className="h-10 w-10 text-gray-500" />
               <p className="text-sm">No receipt image for this bill{record.billAvailable === false ? ' (vendor gave no bill)' : ''}.</p>
               {!readOnly && (
-                <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 ${busy ? 'pointer-events-none opacity-50' : ''}`}>
-                  <Upload className="h-4 w-4" /> {busy ? 'Uploading…' : 'Upload receipt'}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      e.target.value = '';
-                      if (file) run(() => attachReceipt(record.id, file));
-                    }}
-                  />
-                </label>
+                <span className={`inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-2 text-sm font-medium text-white ${busy ? 'opacity-50' : ''}`}>
+                  <Upload className="h-4 w-4" /> {busy ? 'Uploading…' : 'Click or drop to upload'}
+                </span>
               )}
             </div>
+          )}
+          {!readOnly && draggingReceipt && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-indigo-900/60 text-white">
+              <Upload className="h-8 w-8" />
+              <span className="text-sm font-medium">Drop to {record.imageUrl ? 'replace' : 'attach'}</span>
+            </div>
+          )}
+          {!readOnly && (
+            <input
+              ref={receiptInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                e.target.value = '';
+                if (file) run(() => attachReceipt(record.id, file));
+              }}
+            />
           )}
         </div>
 
