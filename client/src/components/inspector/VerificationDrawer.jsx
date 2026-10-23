@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload, FileText } from 'lucide-react';
+import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload, FileText, Trash2 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
@@ -35,6 +35,7 @@ export default function VerificationDrawer() {
   const setRecordStatus = useFinanceStore((s) => s.setRecordStatus);
   const deleteRecord = useFinanceStore((s) => s.deleteRecord);
   const attachReceipt = useFinanceStore((s) => s.attachReceipt);
+  const deleteReceipt = useFinanceStore((s) => s.deleteReceipt);
   const vendors = useFinanceStore((s) => s.vendors);
   const can = useCan();
   const [form, setForm] = useState(null);
@@ -154,13 +155,25 @@ export default function VerificationDrawer() {
             <>
               <ReceiptViewer src={record.imageUrl} />
               {!readOnly && !draggingReceipt && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); if (!busy) receiptInputRef.current?.click(); }}
-                  className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs font-medium text-white hover:bg-black/70"
-                >
-                  <Upload className="h-3 w-3" /> Replace
-                </button>
+                <div className="absolute bottom-2 right-2 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); if (!busy) receiptInputRef.current?.click(); }}
+                    className="inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs font-medium text-white hover:bg-black/70"
+                  >
+                    <Upload className="h-3 w-3" /> Replace
+                  </button>
+                  <ConfirmButton
+                    disabled={busy}
+                    onConfirm={() => run(() => deleteReceipt(record.id))}
+                    title="Delete receipt image?"
+                    message="The image will be permanently removed from this bill. This cannot be undone."
+                    confirmLabel="Delete image"
+                    className="inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs font-medium text-rose-300 hover:bg-rose-900/70"
+                  >
+                    <Trash2 className="h-3 w-3" /> Delete
+                  </ConfirmButton>
+                </div>
               )}
             </>
           ) : (

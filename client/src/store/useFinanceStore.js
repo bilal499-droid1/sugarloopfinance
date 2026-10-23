@@ -114,6 +114,7 @@ export const useFinanceStore = create((set, get) => ({
     form.append('image', file);
     return get()._applyRecord((await api.post(`/records/${id}/image`, form)).data);
   },
+  deleteReceipt: async (id) => get()._applyRecord((await api.delete(`/records/${id}/image`)).data),
   // `changes` are unsaved edits from the inspector, saved in the same request.
   setRecordStatus: async (id, status, payment, changes) =>
     get()._applyRecord((await api.post(`/records/${id}/status`, { status, payment, changes })).data),

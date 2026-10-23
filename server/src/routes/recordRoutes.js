@@ -98,6 +98,17 @@ router.get('/categories', (req, res) => res.json(EXPENSE_CATEGORIES));
 
 router.get('/:id', async (req, res) => res.json(await findRecord(req.params.id)));
 
+// Manager: remove the receipt image from a bill (file deleted from disk).
+router.delete('/:id/image', requireManager, async (req, res) => {
+  const record = await findRecord(req.params.id);
+  if (!record.imageUrl) throw httpError(400, 'This bill has no receipt image');
+  const url = record.imageUrl;
+  record.imageUrl = undefined;
+  await record.save();
+  await removeUpload(url);
+  res.json(record);
+});
+
 // Manager: attach or replace the receipt image of an existing bill. The previous file is removed.
 router.post('/:id/image', requireManager, upload.single('image'), async (req, res) => {
   if (!req.file) throw httpError(400, 'Upload a PNG, JPG, WebP or PDF file');
