@@ -95,9 +95,9 @@ export default function ConsumptionPage() {
           { label: 'Total Qty', value: formatNumber(totalQty), wide: false },
           { label: 'Total Spend', value: formatCurrency(totalSpend), wide: true },
         ].map(({ label, value, wide }) => (
-          <div key={label} className={`rounded-xl border border-slate-200 bg-white px-4 py-3 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
+          <div key={label} className={`min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
             <p className="text-xs font-medium text-slate-500 uppercase">{label}</p>
-            <p className="mt-1 text-lg sm:text-xl font-semibold text-slate-900 truncate">{value}</p>
+            <p className="mt-1 text-sm sm:text-xl font-semibold text-slate-900 break-words">{value}</p>
           </div>
         ))}
       </div>
