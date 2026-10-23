@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pencil, Trash2, UploadCloud, FileText, X } from 'lucide-react';
 import { useFinanceStore, findPreviousPrice } from '../../store/useFinanceStore';
 import api, { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
@@ -76,6 +76,20 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [units, setUnits] = useState(['Kg']);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
+
+  const ACCEPT = 'image/png,image/jpeg,image/webp,application/pdf';
+  const handleFile = (picked) => {
+    if (!picked) return;
+    setFile(picked);
+    setPreview(picked.type.startsWith('image/') ? URL.createObjectURL(picked) : null);
+  };
+  const clearFile = () => { setFile(null); setPreview(null); };
 
   useEffect(() => {
     api.get('/items/units').then((res) => setUnits(res.data));
@@ -265,8 +279,10 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
             ...fields,
             vendorName: form.vendorName,
             verify: form.verify || paying,
+            ...(file && { billAvailable: true }),
             ...(paying && { payment: { date: form.payment.date, method: form.payment.method, reference: form.payment.reference, amount: paidAmount } }),
-          });
+          }, file);
+      clearFile();
       onSaved(saved);
     } catch (err) {
       setError(errorMessage(err));
@@ -585,6 +601,42 @@ export default function PurchaseForm({ initial, record, onSaved, onCancel }) {
           <Field label="Remarks">
             <textarea rows={2} className={inputClass} value={form.notes} onChange={set('notes')} />
           </Field>
+          <div>
+            <span className="text-xs font-medium text-slate-500 uppercase">Attach bill image</span>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
+              className={`relative mt-1.5 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed p-3 transition ${
+                dragging ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400'
+              }`}
+            >
+              {preview ? (
+                <img src={preview} alt="Bill preview" className="max-h-32 rounded object-contain" />
+              ) : file ? (
+                <span className="flex items-center gap-2 text-sm text-slate-600">
+                  <FileText className="h-5 w-5 text-slate-400" /> {file.name}
+                </span>
+              ) : (
+                <span className="flex flex-col items-center gap-1 text-center text-xs text-slate-500">
+                  <UploadCloud className="h-6 w-6 text-slate-400" />
+                  Drop or click to attach (PNG, JPG, PDF)
+                </span>
+              )}
+              {file && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); clearFile(); }}
+                  className="absolute right-1.5 top-1.5 rounded-full bg-white p-0.5 text-slate-400 shadow hover:text-rose-600"
+                  title="Remove"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ''; }} />
+            </div>
+          </div>
           <div>
             <span className="text-xs font-medium text-slate-500 uppercase">Bill available?</span>
             <div className="mt-1.5 flex gap-5 text-sm">

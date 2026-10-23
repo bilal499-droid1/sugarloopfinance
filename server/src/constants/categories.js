@@ -13,3 +13,4 @@ export const LOGISTICS_CATEGORIES = ['INDRIVE_LOGISTICS', 'FUEL_TRANSIT'];
 export const STATUSES = ['PAID', 'PENDING', 'FLAGGED'];
 export const CURRENCIES = ['PKR', 'USD'];
 export const PAYMENT_METHODS = ['CASH', 'BANK', 'CHEQUE', 'ONLINE', 'OTHER'];
+
