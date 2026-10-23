@@ -1,11 +1,11 @@
+
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ArrowLeft, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2 } from 'lucide-react';
+import { ArrowLeft, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
 import { formatDate } from '../utils/format';
-import ThemeToggle from '../components/common/ThemeToggle';
 import { useReturnsStore } from './useReturnsStore';
 
 export const BASE = '/stock-preview';
@@ -22,6 +22,7 @@ const GROUPS = [
   ],
   [
     { to: 'print-purchase', label: 'Print Purchase', icon: Printer },
+    { to: 'print-vendor', label: 'Print Purchase Vendor', icon: Users },
     { to: 'purchase-search', label: 'Purchase Search', icon: FileSearch },
   ],
   // Row 3 (row 2, Print Transfer, is left out on purpose).
@@ -45,7 +46,7 @@ export default function StockLayout() {
       <header className="border-b border-slate-200 bg-white print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
-            <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-12 w-12 object-contain" />
+            <Croissant className="h-7 w-7 text-amber-600" />
             <div>
               <div className="leading-tight font-semibold text-slate-900">Sugarloop · Stock</div>
               <div className="text-xs text-slate-500">
@@ -53,12 +54,9 @@ export default function StockLayout() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-              <ArrowLeft className="h-4 w-4" /> Back to app
-            </Link>
-          </div>
+          <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> Back to app
+          </Link>
         </div>
 
         <nav className="flex gap-1 overflow-x-auto px-2 pb-2 sm:px-4">

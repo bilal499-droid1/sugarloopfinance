@@ -34,7 +34,7 @@ const billingRecordSchema = new mongoose.Schema(
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
     vendorName: String,
     category: { type: String, enum: EXPENSE_CATEGORIES, required: true },
-    source: { type: String, enum: ['OCR', 'MANUAL'], default: 'MANUAL' }, // 'OCR' only on older scanned bills
+    source: { type: String, enum: ['OCR', 'MANUAL'], default: 'OCR' },
 
     // Invoice details
     invoiceNumber: String, // the vendor's own bill number
@@ -51,13 +51,13 @@ const billingRecordSchema = new mongoose.Schema(
     amountPaid: { type: Number, default: 0 },
     clearedAt: Date, // date of the payment that cleared the bill
 
-    // Receipt image (stored only; all values are typed in by hand)
+    // OCR & image details
     imageUrl: String,
-    billAvailable: { type: Boolean, default: true }, // did the vendor hand over a bill?
-    // Legacy: filled by the receipt scanner, which has been removed. Kept so older bills still load.
     detectedPaidStamp: { type: Boolean, default: false },
     ocrConfidence: Number,
+    // Category-specific OCR fields, e.g. { rideId, driverName } or { litersPumped, vehicleReg }
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // Raw OCR result for review: status, detected lines, warnings, paid evidence (see services/ocr.js)
     ocr: { type: mongoose.Schema.Types.Mixed },
 
     // Optional route details (INDRIVE_LOGISTICS, FUEL_TRANSIT)
@@ -66,7 +66,6 @@ const billingRecordSchema = new mongoose.Schema(
 
     notes: String,
     createdBy: String,
-
     // Verification: stock is only added once a manager/admin has verified the receipt.
     verified: { type: Boolean, default: false },
     verifiedBy: String,
