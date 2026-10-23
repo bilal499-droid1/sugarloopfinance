@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload } from 'lucide-react';
+import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload, FileText } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
@@ -42,14 +42,28 @@ export default function VerificationDrawer() {
   const [error, setError] = useState('');
   const [draggingReceipt, setDraggingReceipt] = useState(false);
   const receiptInputRef = useRef(null);
+  // Pending receipt file: staged in the form, uploaded on Save.
+  const [pendingFile, setPendingFile] = useState(null);
+  const [pendingPreview, setPendingPreview] = useState(null);
+  const [draggingForm, setDraggingForm] = useState(false);
+  const formFileRef = useRef(null);
   // Result of the last action, tied to the bill it was for: { id, text }
   const [notice, setNotice] = useState(null);
   const [working, setWorking] = useState(null); // status being applied, for the button label
+
+  useEffect(() => () => { if (pendingPreview) URL.revokeObjectURL(pendingPreview); }, [pendingPreview]);
+
+  const setPending = (file) => {
+    if (!file) { setPendingFile(null); setPendingPreview(null); return; }
+    setPendingFile(file);
+    setPendingPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+  };
 
   // Reset the form when a different record opens or the record changes on the server.
   useEffect(() => {
     setForm(record ? toForm(record) : null);
     setError('');
+    setPending(null);
   }, [record?.id, record?.updatedAt]);
 
   useEffect(() => {
@@ -96,7 +110,10 @@ export default function VerificationDrawer() {
     items: form.items.filter((l) => l.itemId).map(({ itemId, quantity, unitPrice }) => ({ itemId, quantity: Number(quantity), unitPrice: Number(unitPrice) })),
   });
 
-  const save = () => run(() => updateRecord(record.id, payload()));
+  const save = () => run(async () => {
+    await updateRecord(record.id, payload());
+    if (pendingFile) await attachReceipt(record.id, pendingFile);
+  });
   // Save edits and apply the verification action in one request.
   const act = (status) => {
     setWorking(status);
@@ -280,6 +297,46 @@ export default function VerificationDrawer() {
               Notes
               <textarea rows={2} className={inputClass} value={form.notes ?? ''} onChange={set('notes')} disabled={readOnly} />
             </label>
+
+            {!readOnly && (
+              <div>
+                <span className="text-xs font-medium text-slate-500 uppercase">
+                  {record.imageUrl ? 'Replace receipt image' : 'Attach receipt image'}
+                </span>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDraggingForm(true); }}
+                  onDragLeave={() => setDraggingForm(false)}
+                  onDrop={(e) => { e.preventDefault(); setDraggingForm(false); const f = e.dataTransfer.files[0]; if (f) setPending(f); }}
+                  onClick={() => formFileRef.current?.click()}
+                  className={`relative mt-1.5 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed p-3 transition ${
+                    draggingForm ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400'
+                  }`}
+                >
+                  {pendingPreview ? (
+                    <img src={pendingPreview} alt="Preview" className="max-h-28 rounded object-contain" />
+                  ) : pendingFile ? (
+                    <span className="flex items-center gap-2 text-sm text-slate-600">
+                      <FileText className="h-4 w-4 text-slate-400" /> {pendingFile.name}
+                    </span>
+                  ) : (
+                    <span className="flex flex-col items-center gap-1 text-center text-xs text-slate-500">
+                      <Upload className="h-5 w-5 text-slate-400" />
+                      Drop or click — saved when you click Save changes
+                    </span>
+                  )}
+                  {pendingFile && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPending(null); }}
+                      className="absolute right-1.5 top-1.5 rounded-full bg-white p-0.5 text-slate-400 shadow hover:text-rose-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <input ref={formFileRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) setPending(f); }} />
+                </div>
+              </div>
+            )}
 
             <div>
               <span className="text-xs font-medium text-slate-500 uppercase">Bill available?</span>
