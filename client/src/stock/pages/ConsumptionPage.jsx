@@ -89,15 +89,15 @@ export default function ConsumptionPage() {
       </div>
 
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
-          { label: 'Products', value: filtered.length },
-          { label: 'Total Qty', value: formatNumber(totalQty) },
-          { label: 'Total Spend', value: formatCurrency(totalSpend) },
-        ].map(({ label, value }) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          { label: 'Products', value: filtered.length, wide: false },
+          { label: 'Total Qty', value: formatNumber(totalQty), wide: false },
+          { label: 'Total Spend', value: formatCurrency(totalSpend), wide: true },
+        ].map(({ label, value, wide }) => (
+          <div key={label} className={`rounded-xl border border-slate-200 bg-white px-4 py-3 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
             <p className="text-xs font-medium text-slate-500 uppercase">{label}</p>
-            <p className="mt-1 text-xl font-semibold text-slate-900">{value}</p>
+            <p className="mt-1 text-lg sm:text-xl font-semibold text-slate-900 truncate">{value}</p>
           </div>
         ))}
       </div>
