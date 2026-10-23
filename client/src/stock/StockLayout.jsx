@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ArrowLeft, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2, Users } from 'lucide-react';
+import { ArrowLeft, BarChart2, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
@@ -27,6 +27,7 @@ const GROUPS = [
   ],
   // Row 3 (row 2, Print Transfer, is left out on purpose).
   [{ to: 'stock-refresh', label: 'Stock Refresh', icon: RefreshCw }],
+  [{ to: 'consumption', label: 'Consumption', icon: BarChart2 }],
 ];
 
 // Stand-alone shell for the stock preview pages (own URL, not in the main menu yet).

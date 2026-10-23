@@ -21,6 +21,7 @@ import EditReturnPage from './stock/pages/EditReturnPage';
 import PrintPurchasePage from './stock/pages/PrintPurchasePage';
 import PurchaseSearchPage from './stock/pages/PurchaseSearchPage';
 import StockRefreshPage from './stock/pages/StockRefreshPage';
+import ConsumptionPage from './stock/pages/ConsumptionPage';
 
 const RequirePermission = ({ permission, children }) => (useCan()(permission) ? children : <Navigate to="/" replace />);
 
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="print-purchase" element={<PrintPurchasePage />} />
           <Route path="purchase-search" element={<PurchaseSearchPage />} />
           <Route path="stock-refresh" element={<StockRefreshPage />} />
+          <Route path="consumption" element={<ConsumptionPage />} />
           <Route path="*" element={<Navigate to="purchase" replace />} />
         </Route>
         <Route element={<AppLayout />}>
