@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, ArrowUpDown, Eye, Pencil, ShieldCheck, Trash2, Image } from 'lucide-react';
 import { useFinanceStore, useVisibleRecords } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
@@ -70,6 +70,30 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
   const storePaymentStatus = useFinanceStore((s) => s.selectedPaymentStatus);
   const flashRef = useRef(null); // table row (tablet / desktop)
   const flashCardRef = useRef(null); // card (phone)
+  const tableScrollRef = useRef(null);
+  const railScrollRef = useRef(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+  const [tableClientWidth, setTableClientWidth] = useState(0);
+
+  useEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+    const update = () => { setTableScrollWidth(el.scrollWidth); setTableClientWidth(el.clientWidth); };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const onTableScroll = useCallback(() => {
+    if (railScrollRef.current && tableScrollRef.current)
+      railScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
+  }, []);
+
+  const onRailScroll = useCallback(() => {
+    if (tableScrollRef.current && railScrollRef.current)
+      tableScrollRef.current.scrollLeft = railScrollRef.current.scrollLeft;
+  }, []);
   const [query, setQuery] = useState('');
   const [payment, setPayment] = useState('ALL');
   const [sortBy, setSortBy] = useState('date');
@@ -223,7 +247,7 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
       </ul>
 
       {/* Tablet and up: table */}
-      <div className="hidden overflow-x-auto md:block">
+      <div ref={tableScrollRef} className="hidden overflow-x-auto md:block" onScroll={onTableScroll}>
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
             <tr>
@@ -289,6 +313,18 @@ export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
           </tbody>
         </table>
       </div>
+
+      {/* Synced horizontal scrollbar rail — always visible when table overflows */}
+      {tableScrollWidth > tableClientWidth && (
+        <div
+          ref={railScrollRef}
+          onScroll={onRailScroll}
+          className="hidden md:block overflow-x-scroll border-t border-slate-200 bg-white sticky bottom-0 z-10"
+          style={{ height: 14 }}
+        >
+          <div style={{ width: tableScrollWidth, height: 1 }} />
+        </div>
+      )}
 
       {editing && (
         <Modal
