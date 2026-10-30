@@ -14,6 +14,8 @@ export const useFinanceStore = create((set, get) => ({
   vendors: [],
   records: [],
   items: [],
+  periods: [],
+  activePeriodStart: '', // YYYY-MM-DD of the open period's startDate, or '' (show all)
   loading: false,
   error: null,
 
@@ -40,8 +42,15 @@ export const useFinanceStore = create((set, get) => ({
   fetchAll: async () => {
     set({ loading: true, error: null });
     try {
-      const [vendors, records, items] = await Promise.all([api.get('/vendors'), api.get('/records'), api.get('/items')]);
-      set({ vendors: vendors.data, records: records.data, items: items.data });
+      const [vendors, records, items, periods] = await Promise.all([
+        api.get('/vendors'), api.get('/records'), api.get('/items'), api.get('/periods'),
+      ]);
+      const active = periods.data.find((p) => !p.endDate);
+      set({
+        vendors: vendors.data, records: records.data, items: items.data,
+        periods: periods.data,
+        activePeriodStart: active ? toDateInput(active.startDate) : '',
+      });
     } catch {
       set({ error: 'Could not reach the API. Is the server running?' });
     } finally {
@@ -51,10 +60,35 @@ export const useFinanceStore = create((set, get) => ({
 
   // Quiet full refresh (no loading state) used by live updates; new bills are highlighted.
   refreshAll: async () => {
-    const [vendors, records, items] = await Promise.all([api.get('/vendors'), api.get('/records'), api.get('/items')]);
+    const [vendors, records, items, periods] = await Promise.all([
+      api.get('/vendors'), api.get('/records'), api.get('/items'), api.get('/periods'),
+    ]);
     const known = new Set(get().records.map((r) => r.id));
-    set({ vendors: vendors.data, records: records.data, items: items.data });
+    const active = periods.data.find((p) => !p.endDate);
+    set({
+      vendors: vendors.data, records: records.data, items: items.data,
+      periods: periods.data,
+      activePeriodStart: active ? toDateInput(active.startDate) : '',
+    });
     get()._flash(records.data.filter((r) => !known.has(r.id)).map((r) => r.id));
+  },
+
+  // ---- Periods ----
+  createPeriod: async (payload) => {
+    const { data } = await api.post('/periods', payload);
+    const periods = [data, ...get().periods];
+    const active = periods.find((p) => !p.endDate);
+    set({ periods, activePeriodStart: active ? toDateInput(active.startDate) : '' });
+    return data;
+  },
+
+  closePeriod: async (id, payload) => {
+    const { data } = await api.patch(`/periods/${id}/close`, payload);
+    const updated = get().periods.map((p) => (p.id === data.closed.id ? data.closed : p));
+    const periods = [data.opened, ...updated];
+    const active = periods.find((p) => !p.endDate);
+    set({ periods, activePeriodStart: active ? toDateInput(active.startDate) : '' });
+    return data;
   },
 
   _flash: (ids) => {
@@ -182,14 +216,21 @@ export const filterRecords = (records, { vendorId = 'ALL', category = 'ALL', fro
 
 export const useVisibleRecords = (overrides = {}) =>
   useFinanceStore(
-    useShallow((s) =>
-      filterRecords(s.records, {
-        vendorId: s.selectedVendorId,
-        category: s.selectedCategory,
-        ...s.dateRange,
-        ...overrides,
-      })
-    )
+    useShallow((s) => {
+      // If an explicit `from` is passed use it; otherwise fall back to the date-range
+      // filter, then the active period's start date (so the main ledger auto-scopes to
+      // the current accounting period).
+      const from = 'from' in overrides
+        ? overrides.from
+        : (s.dateRange.from || s.activePeriodStart || '');
+      const to = 'to' in overrides ? overrides.to : s.dateRange.to;
+      return filterRecords(s.records, {
+        vendorId: overrides.vendorId ?? s.selectedVendorId,
+        category: overrides.category ?? s.selectedCategory,
+        from,
+        to,
+      });
+    })
   );
 
 // The last price this vendor charged for an item before a given date (for live price checks).

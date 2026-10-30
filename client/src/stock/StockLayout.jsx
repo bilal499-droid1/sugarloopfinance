@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ArrowLeft, BarChart2, Croissant, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, Undo2, Users } from 'lucide-react';
+import { ArrowLeft, BarChart2, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, ShoppingBag, Undo2, UserPlus, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
@@ -28,6 +28,18 @@ const GROUPS = [
   // Row 3 (row 2, Print Transfer, is left out on purpose).
   [{ to: 'stock-refresh', label: 'Stock Refresh', icon: RefreshCw }],
   [{ to: 'consumption', label: 'Consumption', icon: BarChart2 }],
+  // Sales (stock out)
+  [
+    { to: 'sale', label: 'Transfer Out', icon: ShoppingBag },
+    { to: 'edit-sale', label: 'Edit Transfer Out', icon: FilePen },
+  ],
+  [
+    { to: 'print-sale', label: 'Print Sale', icon: Printer },
+    { to: 'sale-search', label: 'Sale Search', icon: FileSearch },
+  ],
+  [
+    { to: 'customers', label: 'Customers', icon: UserPlus },
+  ],
 ];
 
 // Stand-alone shell for the stock preview pages (own URL, not in the main menu yet).
@@ -47,7 +59,7 @@ export default function StockLayout() {
       <header className="border-b border-slate-200 bg-white print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
-            <Croissant className="h-7 w-7 text-amber-600" />
+            <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-10 w-10 object-contain" />
             <div>
               <div className="leading-tight font-semibold text-slate-900">Sugarloop · Stock</div>
               <div className="text-xs text-slate-500">

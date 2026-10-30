@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Croissant } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { errorMessage } from '../api/client';
 import Field, { inputClass, buttonClass } from '../components/common/Field';
@@ -28,7 +27,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-2">
-          <Croissant className="h-8 w-8 text-amber-600" />
+          <img src="/IMG_8653.PNG" alt="Sugarloop" className="h-12 w-12 object-contain" />
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Sugarloop Finance</h1>
             <p className="text-xs text-slate-500">Sign in to continue</p>

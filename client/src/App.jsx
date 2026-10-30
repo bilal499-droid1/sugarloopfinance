@@ -13,6 +13,7 @@ import VendorDetailPage from './pages/VendorDetailPage';
 import InventoryPage from './pages/InventoryPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import UsersPage from './pages/UsersPage';
+import LedgerPeriodsPage from './pages/LedgerPeriodsPage';
 import StockLayout, { BASE as STOCK_BASE } from './stock/StockLayout';
 import PurchasePage from './stock/pages/PurchasePage';
 import EditPurchasePage from './stock/pages/EditPurchasePage';
@@ -22,6 +23,11 @@ import PrintPurchasePage from './stock/pages/PrintPurchasePage';
 import PurchaseSearchPage from './stock/pages/PurchaseSearchPage';
 import StockRefreshPage from './stock/pages/StockRefreshPage';
 import ConsumptionPage from './stock/pages/ConsumptionPage';
+import SalePage from './stock/pages/SalePage';
+import EditSalePage from './stock/pages/EditSalePage';
+import PrintSalePage from './stock/pages/PrintSalePage';
+import SaleSearchPage from './stock/pages/SaleSearchPage';
+import CustomersPage from './stock/pages/CustomersPage';
 
 const RequirePermission = ({ permission, children }) => (useCan()(permission) ? children : <Navigate to="/" replace />);
 
@@ -61,6 +67,11 @@ export default function App() {
           <Route path="purchase-search" element={<PurchaseSearchPage />} />
           <Route path="stock-refresh" element={<StockRefreshPage />} />
           <Route path="consumption" element={<ConsumptionPage />} />
+          <Route path="sale" element={<SalePage />} />
+          <Route path="edit-sale" element={<EditSalePage />} />
+          <Route path="print-sale" element={<PrintSalePage />} />
+          <Route path="sale-search" element={<SaleSearchPage />} />
+          <Route path="customers" element={<CustomersPage />} />
           <Route path="*" element={<Navigate to="purchase" replace />} />
         </Route>
         <Route element={<AppLayout />}>
@@ -82,6 +93,14 @@ export default function App() {
             element={
               <RequirePermission permission="manageUsers">
                 <UsersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="ledger-periods"
+            element={
+              <RequirePermission permission="managePeriods">
+                <LedgerPeriodsPage />
               </RequirePermission>
             }
           />

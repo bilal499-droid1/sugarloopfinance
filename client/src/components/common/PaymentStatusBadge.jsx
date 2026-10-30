@@ -16,8 +16,8 @@ export default function PaymentStatusBadge({ record }) {
       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>{label}</span>
       <div className="mt-0.5 text-xs text-slate-500">
         {key === 'PAID' && record.clearedAt && `on ${formatDate(record.clearedAt)}`}
-        {key === 'PARTIAL' && `${money(record.amountPaid)} paid`}
-        {key === 'UNPAID' && money(due)}
+        {key === 'PARTIAL' && `${money(record.amountPaid)} paid · ${money(due)} pending`}
+        {key === 'UNPAID' && `${money(due)} pending`}
       </div>
     </div>
   );

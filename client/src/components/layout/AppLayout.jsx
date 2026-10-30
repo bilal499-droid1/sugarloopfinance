@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, Building2, Boxes, Landmark, Users, LogOut, Menu, X, ShoppingCart, CalendarRange } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useCan, ROLE_LABELS } from '../../utils/permissions';
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/inventory', label: 'Inventory', icon: Boxes },
   { to: '/liabilities', label: 'Liabilities', icon: Landmark },
   { to: '/users', label: 'Users', icon: Users, permission: 'manageUsers' },
+  { to: '/ledger-periods', label: 'Ledger Periods', icon: CalendarRange, permission: 'managePeriods' },
 ];
 
 const Brand = () => (

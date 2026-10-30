@@ -1,4 +1,3 @@
-// Light/dark theme. index.html applies the saved choice (or the device setting)
 // before the app loads, so pages don't flash light first.
 const KEY = 'theme';
 

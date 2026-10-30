@@ -3,7 +3,7 @@ import StockMovement from '../models/StockMovement.js';
 import { httpError } from '../middleware/errorHandler.js';
 
 // Apply a signed quantity change to an item and log it. Refuses to go below zero.
-export const moveStock = async ({ itemId, change, type, user, recordId, returnId, branch, reason }) => {
+export const moveStock = async ({ itemId, change, type, user, recordId, returnId, saleId, branch, reason }) => {
   if (!change) return null;
 
   const item = await Item.findOneAndUpdate(
@@ -26,6 +26,7 @@ export const moveStock = async ({ itemId, change, type, user, recordId, returnId
     after: item.inHand,
     recordId,
     returnId,
+    saleId,
     branch,
     reason,
     userId: user?.id,

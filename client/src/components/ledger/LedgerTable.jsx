@@ -57,9 +57,10 @@ const InvoiceNo = ({ record }) => (
 );
 
 // Vendor ledger: Date · Supplier · Invoice No · Item description · Amount · Bill · Payment status.
-// Pass `vendorId` to pin it to one vendor (vendor detail page).
-export default function LedgerTable({ vendorId, title = 'Vendor Ledger' }) {
-  const records = useVisibleRecords(vendorId ? { vendorId, category: 'ALL' } : {});
+// Pass `vendorId` to pin it to one vendor. Pass `from`/`to` (YYYY-MM-DD) to override the period filter.
+export default function LedgerTable({ vendorId, from, to, title = 'Vendor Ledger' }) {
+  const overrides = { ...(vendorId ? { vendorId, category: 'ALL' } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) };
+  const records = useVisibleRecords(overrides);
   const openInspector = useFinanceStore((s) => s.openInspector);
   const deleteRecord = useFinanceStore((s) => s.deleteRecord);
   const can = useCan();

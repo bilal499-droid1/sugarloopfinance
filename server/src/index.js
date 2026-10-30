@@ -11,7 +11,11 @@ import itemRoutes from './routes/itemRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import recordRoutes from './routes/recordRoutes.js';
 import returnRoutes from './routes/returnRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
+import saleRoutes from './routes/saleRoutes.js';
+import periodRoutes from './routes/periodRoutes.js';
 import { announceChanges, liveStream } from './services/live.js';
+import { startPeriodScheduler } from './services/periodScheduler.js';
 
 if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET is not set in server/.env');
@@ -37,14 +41,18 @@ app.use('/api/items', itemRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/returns', returnRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/sales', saleRoutes);
+app.use('/api/periods', periodRoutes);
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 connectDB()
-  .then(() =>
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
-  )
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    startPeriodScheduler();
+  })
   .catch((err) => {
     console.error(err.message);
     process.exit(1);

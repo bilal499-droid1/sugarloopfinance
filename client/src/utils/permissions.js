@@ -16,6 +16,7 @@ const RULES = {
   deleteVendor: ['ADMIN'],
   deleteItem: ['ADMIN'],
   manageUsers: ['ADMIN'],
+  managePeriods: ['ADMIN'],
 };
 
 export const can = (user, action) => Boolean(user && RULES[action]?.includes(user.role));
