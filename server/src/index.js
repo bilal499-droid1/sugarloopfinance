@@ -14,7 +14,6 @@ import returnRoutes from './routes/returnRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import saleRoutes from './routes/saleRoutes.js';
 import periodRoutes from './routes/periodRoutes.js';
-import LedgerPeriod from './models/LedgerPeriod.js';
 import { announceChanges, liveStream } from './services/live.js';
 import { startPeriodScheduler } from './services/periodScheduler.js';
 
@@ -30,10 +29,6 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
-app.get('/api/health/periods', async (req, res) => {
-  const periods = await LedgerPeriod.find().sort({ startDate: -1 }).limit(5).lean();
-  res.json(periods);
-});
 app.use('/api/auth', authRoutes);
 
 // Everything below requires a signed-in user.
