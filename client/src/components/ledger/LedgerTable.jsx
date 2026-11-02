@@ -248,7 +248,7 @@ export default function LedgerTable({ vendorId, from, to, title = 'Vendor Ledger
       </ul>
 
       {/* Tablet and up: table */}
-      <div ref={tableScrollRef} className="hidden overflow-x-auto md:block" onScroll={onTableScroll}>
+      <div ref={tableScrollRef} className="hidden overflow-x-scroll md:block [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onScroll={onTableScroll}>
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
             <tr>

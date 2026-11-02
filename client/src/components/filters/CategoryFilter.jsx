@@ -1,14 +1,18 @@
-import { useFinanceStore } from '../../store/useFinanceStore';
+import { useFinanceStore, filterRecords } from '../../store/useFinanceStore';
 import { CATEGORIES, CATEGORY_KEYS } from '../../utils/categories';
 
-// Category tag chips with live record counts (respecting the vendor filter).
+// Category tag chips with live record counts (respecting the vendor + period filter).
 export default function CategoryFilter() {
   const records = useFinanceStore((s) => s.records);
   const selectedVendorId = useFinanceStore((s) => s.selectedVendorId);
   const selectedCategory = useFinanceStore((s) => s.selectedCategory);
   const setSelectedCategory = useFinanceStore((s) => s.setSelectedCategory);
+  const activePeriodStart = useFinanceStore((s) => s.activePeriodStart);
+  const dateRange = useFinanceStore((s) => s.dateRange);
 
-  const vendorRecords = records.filter((r) => selectedVendorId === 'ALL' || r.vendorId === selectedVendorId);
+  const from = dateRange.from || activePeriodStart || '';
+  const to = dateRange.to;
+  const vendorRecords = filterRecords(records, { vendorId: selectedVendorId, from, to });
   const countFor = (key) => vendorRecords.filter((r) => r.category === key).length;
 
   const chip = (active) =>

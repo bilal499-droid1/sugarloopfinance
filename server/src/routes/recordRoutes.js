@@ -13,6 +13,7 @@ import { recalcVendorTotals } from '../services/vendorTotals.js';
 import { syncRecordStock } from '../services/stock.js';
 import { attachPreviousPrices, buildLines, nextPurchaseInvoiceNo } from '../services/invoices.js';
 import { findOrCreateVendor } from '../services/vendors.js';
+import LedgerPeriod from '../models/LedgerPeriod.js';
 
 // File type -> extension we store it under (so viewers can tell PDFs from images).
 const EXTENSIONS = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'application/pdf': '.pdf' };
@@ -171,11 +172,14 @@ router.post('/', upload.single('image'), async (req, res) => {
 
 const sameName = (a, b) => String(a ?? '').trim().replace(/\s+/g, ' ').toLowerCase() === String(b ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 
-// Reject if this vendor already has a non-flagged bill with the same invoice number.
+// Reject if this vendor already has a non-flagged bill with the same invoice number
+// within the current active period (so invoice numbers can repeat across periods).
 const checkDuplicateInvoice = async (invoiceNumber, vendorId, excludeId = null) => {
   const inv = String(invoiceNumber ?? '').trim();
   if (!inv) return;
+  const active = await LedgerPeriod.findOne({ endDate: null });
   const query = { invoiceNumber: inv, vendorId, flagged: { $ne: true } };
+  if (active) query.receiptDate = { $gte: active.startDate };
   if (excludeId) query._id = { $ne: excludeId };
   const existing = await BillingRecord.findOne(query).select('invoiceNumber vendorName receiptDate');
   if (existing) {
