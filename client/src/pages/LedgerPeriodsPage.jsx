@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { CalendarRange, ChevronLeft, Plus, Lock, Clock, Download } from 'lucide-react';
-import { useFinanceStore } from '../store/useFinanceStore';
+import { useFinanceStore, filterRecords } from '../store/useFinanceStore';
 import api, { errorMessage } from '../api/client';
 import { formatDate, toDateInput } from '../utils/format';
 import { useCan } from '../utils/permissions';
 import PageHeader from '../components/common/PageHeader';
 import LedgerTable from '../components/ledger/LedgerTable';
+import PeriodSummary from '../components/dashboard/PeriodSummary';
 import { buttonClass } from '../components/common/Field';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -224,6 +225,8 @@ function ClosePeriodForm({ active, onSave, onCancel }) {
 
 export default function LedgerPeriodsPage() {
   const periods = useFinanceStore((s) => s.periods);
+  const allRecords = useFinanceStore((s) => s.records);
+  const activePeriodStart = useFinanceStore((s) => s.activePeriodStart);
   const createPeriod = useFinanceStore((s) => s.createPeriod);
   const closePeriod = useFinanceStore((s) => s.closePeriod);
   const can = useCan();
@@ -235,7 +238,12 @@ export default function LedgerPeriodsPage() {
   const active = periods.find((p) => !p.endDate);
   const archived = periods.filter((p) => p.endDate).sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
 
+  const activeRecords = filterRecords(allRecords, { from: activePeriodStart });
+
   if (browsing) {
+    const from = toDateInput(browsing.startDate);
+    const to = toDateInput(browsing.endDate);
+    const browsingRecords = filterRecords(allRecords, { from, to });
     return (
       <>
         <button
@@ -248,9 +256,10 @@ export default function LedgerPeriodsPage() {
           title={browsing.label}
           subtitle={`Archive · ${periodRange(browsing)}`}
         />
+        <PeriodSummary records={browsingRecords} />
         <LedgerTable
-          from={toDateInput(browsing.startDate)}
-          to={toDateInput(browsing.endDate)}
+          from={from}
+          to={to}
           title={`${browsing.label} — Vendor Ledger`}
         />
       </>
@@ -328,6 +337,9 @@ export default function LedgerPeriodsPage() {
           )}
         </div>
       </section>
+
+      {/* Active period summary stats */}
+      {active && <PeriodSummary records={activeRecords} />}
 
       {/* Archived periods */}
       <section className="rounded-xl border border-slate-200 bg-white">
