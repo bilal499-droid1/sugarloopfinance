@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ArrowLeft, BarChart2, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, ShoppingBag, Undo2, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, BarChart2, FilePen, FileSearch, PackageMinus, PackagePlus, Printer, RefreshCw, ShoppingBag, Undo2, UserPlus, Users, TrendingDown } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { ROLE_LABELS } from '../utils/permissions';
@@ -39,6 +39,11 @@ const GROUPS = [
   ],
   [
     { to: 'customers', label: 'Customers', icon: UserPlus },
+  ],
+  // Sale Out (daily retail)
+  [
+    { to: 'saleout', label: 'Sale Out', icon: TrendingDown },
+    { to: 'saleout-search', label: 'SO Browse', icon: FileSearch },
   ],
 ];
 

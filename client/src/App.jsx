@@ -28,6 +28,8 @@ import EditSalePage from './stock/pages/EditSalePage';
 import PrintSalePage from './stock/pages/PrintSalePage';
 import SaleSearchPage from './stock/pages/SaleSearchPage';
 import CustomersPage from './stock/pages/CustomersPage';
+import SaleOutPage from './stock/pages/SaleOutPage';
+import SaleOutSearchPage from './stock/pages/SaleOutSearchPage';
 
 const RequirePermission = ({ permission, children }) => (useCan()(permission) ? children : <Navigate to="/" replace />);
 
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="print-sale" element={<PrintSalePage />} />
           <Route path="sale-search" element={<SaleSearchPage />} />
           <Route path="customers" element={<CustomersPage />} />
+          <Route path="saleout" element={<SaleOutPage />} />
+          <Route path="saleout-search" element={<SaleOutSearchPage />} />
           <Route path="*" element={<Navigate to="purchase" replace />} />
         </Route>
         <Route element={<AppLayout />}>
@@ -108,5 +112,5 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
-  );
+  )
 }

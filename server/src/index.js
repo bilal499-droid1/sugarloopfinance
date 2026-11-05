@@ -13,6 +13,7 @@ import recordRoutes from './routes/recordRoutes.js';
 import returnRoutes from './routes/returnRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import saleRoutes from './routes/saleRoutes.js';
+import saleOutRoutes from './routes/saleOutRoutes.js';
 import periodRoutes from './routes/periodRoutes.js';
 import { announceChanges, liveStream } from './services/live.js';
 import { startPeriodScheduler } from './services/periodScheduler.js';
@@ -43,6 +44,7 @@ app.use('/api/records', recordRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/sales', saleRoutes);
+app.use('/api/saleout', saleOutRoutes);
 app.use('/api/periods', periodRoutes);
 
 app.use(errorHandler);
