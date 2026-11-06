@@ -9,6 +9,7 @@ const saleOutLineSchema = new mongoose.Schema(
     itemName: { type: String, required: true },
     unit: { type: String, default: 'per' },
     qty: { type: Number, required: true, min: 0 },
+    received: { type: Number, default: 0, min: 0 },
     price: { type: Number, required: true, min: 0 },
     total: { type: Number, default: 0 },
   },
@@ -19,6 +20,7 @@ const saleOutSchema = new mongoose.Schema(
   {
     entryNo: { type: String, unique: true, sparse: true },
     saleDate: { type: Date, required: true },
+    type: { type: String, enum: ['perishable', 'nonperishable'], default: 'perishable' },
     lines: [saleOutLineSchema],
     grandTotal: { type: Number, default: 0 },
     notes: String,

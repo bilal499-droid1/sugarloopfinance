@@ -24,23 +24,29 @@ router.get('/', async (req, res) => {
     if (req.query.from) filter.saleDate.$gte = new Date(req.query.from);
     if (req.query.to) filter.saleDate.$lte = new Date(`${req.query.to}T23:59:59.999Z`);
   }
-  res.json(await SaleOut.find(filter).sort('-saleDate -createdAt').lean());
+  if (req.query.type === 'nonperishable') {
+    filter.type = 'nonperishable';
+  } else if (req.query.type === 'perishable') {
+    filter.type = { $ne: 'nonperishable' };
+  }
+  res.json(await SaleOut.find(filter).sort('-saleDate -createdAt'));
 });
 
 router.get('/:id', async (req, res) => {
-  const doc = await SaleOut.findById(req.params.id).lean();
+  const doc = await SaleOut.findById(req.params.id);
   if (!doc) throw httpError(404, 'Sale Out record not found');
   res.json(doc);
 });
 
 // POST /api/saleout
 router.post('/', async (req, res) => {
-  const { saleDate, lines, notes } = req.body;
+  const { saleDate, lines, notes, type } = req.body;
   if (!saleDate) throw httpError(400, 'Sale date is required');
   if (!lines?.length) throw httpError(400, 'At least one line with qty > 0 is required');
 
   const doc = new SaleOut({
     saleDate: new Date(saleDate),
+    type: type || 'perishable',
     lines,
     notes,
     createdBy: req.user.name,

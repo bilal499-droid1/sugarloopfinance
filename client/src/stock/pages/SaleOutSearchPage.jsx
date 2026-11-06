@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Printer, Trash2 } from 'lucide-react';
 import { useSaleOutStore } from '../useSaleOutStore';
 import { SALEOUT_CATALOG, ALL_ITEMS } from '../catalog/saleOutCatalog';
+import { NP_CATALOG, NP_ALL_ITEMS } from '../catalog/nonPerishableCatalog';
 import PageHeader from '../../components/common/PageHeader';
 import { formatCurrency } from '../../utils/format';
 import { useCan } from '../../utils/permissions';
@@ -17,46 +18,74 @@ const fmtDate = (iso) => {
   return d.toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
 };
 
+function Tabs({ active, onChange }) {
+  return (
+    <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 w-fit print:hidden">
+      {[
+        { key: 'perishable', label: 'Perishable' },
+        { key: 'nonperishable', label: 'Non-Perishable' },
+      ].map((t) => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          className={`rounded-lg px-5 py-1.5 text-sm font-medium transition-colors ${
+            active === t.key
+              ? 'bg-white text-indigo-700 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function SaleOutSearchPage() {
   const { records, loading, error, fetchRecords, deleteRecord } = useSaleOutStore();
   const can = useCan();
 
+  const [activeTab, setActiveTab] = useState('perishable');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
 
-  useEffect(() => {
-    fetchRecords({ from, to });
-  }, []);
+  const catalog = activeTab === 'perishable' ? SALEOUT_CATALOG : NP_CATALOG;
+  const allItems = activeTab === 'perishable' ? ALL_ITEMS : NP_ALL_ITEMS;
 
-  const handleSearch = () => fetchRecords({ from, to });
+  useEffect(() => {
+    fetchRecords({ from, to, type: activeTab });
+  }, [activeTab]);
+
+  const handleSearch = () => fetchRecords({ from, to, type: activeTab });
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this Sale Out entry?')) return;
     await deleteRecord(id);
   };
 
-  // Build columns: one per record, sorted by date asc then createdAt
   const cols = [...records].sort((a, b) => {
     const dA = new Date(a.saleDate), dB = new Date(b.saleDate);
     return dA - dB || new Date(a.createdAt) - new Date(b.createdAt);
   });
 
-  // For each item, look up the qty in a given record
   const getQty = (record, itemName) => {
     const line = record.lines.find((l) => l.itemName === itemName);
     return line?.qty ?? 0;
   };
   const getPrice = (record, itemName) => {
     const line = record.lines.find((l) => l.itemName === itemName);
-    return line?.price ?? ALL_ITEMS.find((i) => i.name === itemName)?.price ?? 0;
+    return line?.price ?? allItems.find((i) => i.name === itemName)?.price ?? 0;
   };
-
-  // Daily totals per column
-  const colTotals = cols.map((rec) => rec.grandTotal);
 
   return (
     <>
       <PageHeader title="Sale Out — Browse" subtitle="View all sale out entries in a date range." />
+
+      <Tabs active={activeTab} onChange={handleTabChange} />
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 print:hidden">
@@ -85,7 +114,7 @@ export default function SaleOutSearchPage() {
 
       {!loading && cols.length === 0 && (
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
-          No Sale Out entries found for this date range.
+          No {activeTab === 'perishable' ? 'Perishable' : 'Non-Perishable'} entries found for this date range.
         </p>
       )}
 
@@ -93,12 +122,11 @@ export default function SaleOutSearchPage() {
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="min-w-full text-xs">
             <thead>
-              {/* Top header: entry info row */}
               <tr className="bg-amber-500 text-white">
                 <th className="w-28 px-2 py-2 text-left border-r border-amber-400">Category</th>
                 <th className="w-40 px-2 py-2 text-left border-r border-amber-400">Item Name</th>
                 <th className="w-12 px-2 py-2 text-center border-r border-amber-400">Unit</th>
-                {cols.map((rec, i) => (
+                {cols.map((rec) => (
                   <th key={rec.id} colSpan={3} className="px-2 py-2 text-center border-r border-amber-400 min-w-[150px]">
                     <div className="font-semibold">{new Date(rec.saleDate).getUTCDate()} · {fmtDate(rec.saleDate)}</div>
                     {rec.notes && <div className="text-[10px] opacity-80">{rec.notes}</div>}
@@ -106,7 +134,6 @@ export default function SaleOutSearchPage() {
                   </th>
                 ))}
               </tr>
-              {/* Sub-header: Qty / Price / Daily T */}
               <tr className="bg-amber-400 text-white text-[10px]">
                 <th className="px-2 py-1 border-r border-amber-300" />
                 <th className="px-2 py-1 border-r border-amber-300" />
@@ -123,7 +150,7 @@ export default function SaleOutSearchPage() {
               </tr>
             </thead>
             <tbody>
-              {SALEOUT_CATALOG.map((cat) =>
+              {catalog.map((cat) =>
                 cat.items.map((item, idx) => (
                   <tr key={item.name} className={`border-t border-slate-100 ${cat.colorClass}`}>
                     {idx === 0 && (
@@ -145,7 +172,7 @@ export default function SaleOutSearchPage() {
                         <td key={rec.id} colSpan={3} className="border-r border-slate-100 p-0">
                           <div className="grid grid-cols-3 divide-x divide-slate-100">
                             <span className="px-2 py-1 text-center tabular-nums">{qty || ''}</span>
-                            <span className="px-2 py-1 text-center tabular-nums text-slate-500">{price.toFixed(2)}</span>
+                            <span className="px-2 py-1 text-center tabular-nums text-slate-500">{price > 0 ? price.toFixed(2) : ''}</span>
                             <span className="px-2 py-1 text-center tabular-nums font-medium">{total > 0 ? total : ''}</span>
                           </div>
                         </td>
@@ -168,7 +195,6 @@ export default function SaleOutSearchPage() {
                   </td>
                 ))}
               </tr>
-              {/* Delete row — admin only, hidden in print */}
               {can('manageUsers') && (
                 <tr className="print:hidden bg-slate-50 border-t border-slate-200">
                   <td colSpan={3} className="px-2 py-1 text-xs text-slate-400 border-r border-slate-200">Actions</td>
