@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, CheckCircle2, Clock, XCircle, Printer, Save, Lock, ShieldCheck, ImageOff, Upload, FileText, Trash2 } from 'lucide-react';
+import { buttonClass } from '../common/Field';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { errorMessage } from '../../api/client';
 import { useCan } from '../../utils/permissions';
@@ -303,7 +304,7 @@ export default function VerificationDrawer() {
 
             <label className="block">
               Total amount (PKR) {hasLines && <span className="text-xs text-slate-400">(sum of items)</span>}
-              <input type="number" step="0.01" className={inputClass} value={hasLines ? linesTotal(form.items) : form.amount} onChange={set('amount')} disabled={readOnly || hasLines} />
+              <input type="number" step="0.01" className={`${inputClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} value={hasLines ? linesTotal(form.items) : form.amount} onChange={set('amount')} disabled={readOnly || hasLines} />
             </label>
 
             <label className="block">
@@ -405,7 +406,7 @@ export default function VerificationDrawer() {
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <button disabled={busy} onClick={save} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50">
+                <button disabled={busy} onClick={save} className={`inline-flex items-center gap-1.5 ${buttonClass.primary}`}>
                   <Save className="h-4 w-4" /> Save changes only
                 </button>
                 {can('deleteInvoice') && (
@@ -415,9 +416,9 @@ export default function VerificationDrawer() {
                     title="Delete this bill?"
                     message={`${record.vendorName}${record.invoiceNumber ? ` · Invoice ${record.invoiceNumber}` : ''} · ${formatCurrency(record.amount, record.currency)} will be deleted with its receipt image and payments. This cannot be undone.`}
                     confirmLabel="Delete bill"
-                    className="rounded-md px-2 py-1 text-sm text-rose-600 hover:bg-rose-50"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
                   >
-                    Delete invoice
+                    <Trash2 className="h-4 w-4" /> Delete invoice
                   </ConfirmButton>
                 )}
               </div>
