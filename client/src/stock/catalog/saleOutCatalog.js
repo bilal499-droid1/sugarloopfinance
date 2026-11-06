@@ -2,8 +2,8 @@
 export const SALEOUT_CATALOG = [
   {
     category: 'Donuts',
-    colorClass: 'bg-pink-50',
-    headerClass: 'bg-pink-200 text-pink-900',
+    colorClass: '',
+    headerClass: 'bg-pink-500 text-white',
     items: [
       { name: 'Chocoholic', price: 299 },
       { name: 'Boston', price: 299 },
@@ -30,8 +30,8 @@ export const SALEOUT_CATALOG = [
   },
   {
     category: 'Croissants',
-    colorClass: 'bg-teal-50',
-    headerClass: 'bg-teal-700 text-white',
+    colorClass: '',
+    headerClass: 'bg-teal-600 text-white',
     items: [
       { name: 'Butter Cream Croissant', price: 370 },
       { name: 'Chocolate Croissant', price: 379 },
@@ -41,8 +41,8 @@ export const SALEOUT_CATALOG = [
   },
   {
     category: 'Sandwich',
-    colorClass: 'bg-amber-50',
-    headerClass: 'bg-amber-200 text-amber-900',
+    colorClass: '',
+    headerClass: 'bg-amber-500 text-white',
     items: [
       { name: 'Signature Chicken Sandwich', price: 349 },
       { name: 'Classic Scrambled Eggs Sandwich', price: 349 },
@@ -53,8 +53,8 @@ export const SALEOUT_CATALOG = [
   },
   {
     category: 'Brownies',
-    colorClass: 'bg-orange-50',
-    headerClass: 'bg-orange-200 text-orange-900',
+    colorClass: '',
+    headerClass: 'bg-orange-500 text-white',
     items: [
       { name: 'Peanut Butter', price: 299 },
       { name: 'Classic Fudge', price: 299 },

@@ -174,7 +174,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
                   </th>
                 </tr>
                 {/* Column sub-header */}
-                <tr className="bg-slate-100 text-xs font-semibold text-slate-600 uppercase">
+                <tr className="bg-slate-200 dark:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase">
                   <th className="w-10 px-3 py-1.5 text-center border-r border-slate-200">#</th>
                   <th className="px-3 py-1.5 text-left">Item Name</th>
                   <th className="w-28 px-3 py-1.5 text-center">Dispatched</th>

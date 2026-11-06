@@ -2,7 +2,7 @@
 export const NP_CATALOG = [
   {
     category: 'Motion Vendor',
-    colorClass: 'bg-blue-50',
+    colorClass: '',
     headerClass: 'bg-blue-500 text-white',
     items: [
       { name: 'Glass Water Bottle 330ml (Pet)', price: 768 },
@@ -16,7 +16,7 @@ export const NP_CATALOG = [
   },
   {
     category: 'Coffee & Frappes',
-    colorClass: 'bg-orange-50',
+    colorClass: '',
     headerClass: 'bg-orange-500 text-white',
     items: [
       { name: 'Fizzup Pet', price: 0 },
@@ -48,7 +48,7 @@ export const NP_CATALOG = [
   },
   {
     category: 'Packaging',
-    colorClass: 'bg-green-50',
+    colorClass: '',
     headerClass: 'bg-green-600 text-white',
     items: [
       { name: 'Single Donut Pouch', price: 8 },
@@ -74,7 +74,7 @@ export const NP_CATALOG = [
   },
   {
     category: 'Essentials',
-    colorClass: 'bg-sky-50',
+    colorClass: '',
     headerClass: 'bg-sky-600 text-white',
     items: [
       { name: 'Cling Fling Wrap', price: 1500 },
@@ -100,7 +100,7 @@ export const NP_CATALOG = [
   },
   {
     category: 'Merch',
-    colorClass: 'bg-rose-50',
+    colorClass: '',
     headerClass: 'bg-rose-500 text-white',
     items: [
       { name: 'Staff Shirts', price: 1700 },
