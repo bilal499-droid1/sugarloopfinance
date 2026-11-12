@@ -53,6 +53,7 @@ export default function SaleOutSearchPage() {
   const [filterBranch, setFilterBranch] = useState('');
   const [editColKey, setEditColKey] = useState(null);
   const [editQtys, setEditQtys] = useState({});
+  const [editDate, setEditDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   const catalog = activeTab === 'perishable' ? SALEOUT_CATALOG : NP_CATALOG;
@@ -78,10 +79,11 @@ export default function SaleOutSearchPage() {
       qtys[it.name] = line?.qty ?? 0;
     });
     setEditQtys(qtys);
+    setEditDate(new Date(col.rec.saleDate).toISOString().slice(0, 10));
     setEditColKey(`${col.dk}-${col.br}`);
   };
 
-  const cancelEdit = () => { setEditColKey(null); setEditQtys({}); };
+  const cancelEdit = () => { setEditColKey(null); setEditQtys({}); setEditDate(''); };
 
   const saveEdit = async (col) => {
     setSaving(true);
@@ -102,7 +104,7 @@ export default function SaleOutSearchPage() {
             };
           })
       );
-      await updateRecord(col.rec.id, { lines });
+      await updateRecord(col.rec.id, { lines, saleDate: editDate });
       cancelEdit();
       fetchRecords({ from, to, type: activeTab });
     } finally {
@@ -202,12 +204,25 @@ export default function SaleOutSearchPage() {
                 <th className="w-28 px-2 py-2 text-left border-r border-amber-400">Category</th>
                 <th className="w-40 px-2 py-2 text-left border-r border-amber-400">Item Name</th>
                 <th className="w-12 px-2 py-2 text-center border-r border-amber-400">Unit</th>
-                {cols.map((col) => (
-                  <th key={`${col.dk}-${col.br}`} className="px-2 py-2 text-center border-r border-amber-400 min-w-[90px]">
-                    <div className="font-semibold">{fmtDate(col.dk)}</div>
-                    <div className="text-[11px] font-medium opacity-90 mt-0.5">{col.br}</div>
-                  </th>
-                ))}
+                {cols.map((col) => {
+                  const colKey = `${col.dk}-${col.br}`;
+                  const isEditing = editColKey === colKey;
+                  return (
+                    <th key={colKey} className="px-2 py-2 text-center border-r border-amber-400 min-w-[90px]">
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="w-full rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-white"
+                        />
+                      ) : (
+                        <div className="font-semibold">{fmtDate(col.dk)}</div>
+                      )}
+                      <div className="text-[11px] font-medium opacity-90 mt-0.5">{col.br}</div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
