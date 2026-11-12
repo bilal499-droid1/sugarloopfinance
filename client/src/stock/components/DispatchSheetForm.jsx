@@ -4,8 +4,6 @@ import { useSaleOutStore } from '../useSaleOutStore';
 import PageHeader from '../../components/common/PageHeader';
 import { formatCurrency } from '../../utils/format';
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 export const BRANCHES = [
   'DHA Phase 1',
   'DHA Phase 2',
@@ -17,15 +15,13 @@ export const BRANCHES = [
 let _rowId = 0;
 const newRow = () => ({ id: ++_rowId, name: '', price: '', dispatched: '', received: '' });
 
-export default function DispatchSheetForm({ catalog, allItems, type }) {
+export default function DispatchSheetForm({ catalog, allItems, type, saleDate, onSaleDateChange, branch, onBranchChange }) {
   const createRecord = useSaleOutStore((s) => s.createRecord);
 
   const blankQtys = () => Object.fromEntries(allItems.map((it) => [it.name, '']));
   const blankPrices = () => Object.fromEntries(allItems.map((it) => [it.name, it.price]));
   const blankCustomRows = () => Object.fromEntries(catalog.map((cat) => [cat.category, []]));
 
-  const [saleDate, setSaleDate] = useState(today());
-  const [branch, setBranch] = useState('');
   const [notes, setNotes] = useState('');
   const [dispatched, setDispatched] = useState(blankQtys);
   const [received, setReceived] = useState(blankQtys);
@@ -38,6 +34,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
   const setDispatchedQty = (name, val) => {
     const n = val === '' ? '' : Math.max(0, Number(val));
     setDispatched((prev) => ({ ...prev, [name]: n }));
+    setReceived((prev) => ({ ...prev, [name]: n }));
   };
 
   const setReceivedQty = (name, val) => {
@@ -59,7 +56,12 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
   const updateCustomRow = (category, id, field, val) =>
     setCustomRows((prev) => ({
       ...prev,
-      [category]: prev[category].map((r) => (r.id === id ? { ...r, [field]: val } : r)),
+      [category]: prev[category].map((r) => {
+        if (r.id !== id) return r;
+        const updated = { ...r, [field]: val };
+        if (field === 'dispatched') updated.received = val;
+        return updated;
+      }),
     }));
 
   const grandTotal =
@@ -121,7 +123,6 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
       setReceived(blankQtys());
       setPrices(blankPrices());
       setCustomRows(blankCustomRows());
-      setBranch('');
       setNotes('');
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to save.');
@@ -159,7 +160,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
           <input
             type="date"
             value={saleDate}
-            onChange={(e) => setSaleDate(e.target.value)}
+            onChange={(e) => onSaleDateChange(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
@@ -167,7 +168,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
           <label className="mb-1 block text-xs font-medium text-slate-600">Branch <span className="text-rose-400">*</span></label>
           <select
             value={branch}
-            onChange={(e) => setBranch(e.target.value)}
+            onChange={(e) => onBranchChange(e.target.value)}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100"
           >
             <option value="">— select branch —</option>

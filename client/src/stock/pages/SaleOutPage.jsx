@@ -3,6 +3,8 @@ import { SALEOUT_CATALOG, ALL_ITEMS } from '../catalog/saleOutCatalog';
 import DispatchSheetForm from '../components/DispatchSheetForm';
 import NonPerishablePage from './NonPerishablePage';
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 function Tabs({ active, onChange }) {
   return (
     <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 w-fit">
@@ -28,14 +30,29 @@ function Tabs({ active, onChange }) {
 
 export default function SaleOutPage() {
   const [activeTab, setActiveTab] = useState('perishable');
+  const [saleDate, setSaleDate] = useState(today());
+  const [branch, setBranch] = useState('');
 
   return (
     <>
       <Tabs active={activeTab} onChange={setActiveTab} />
       {activeTab === 'perishable' ? (
-        <DispatchSheetForm catalog={SALEOUT_CATALOG} allItems={ALL_ITEMS} type="perishable" />
+        <DispatchSheetForm
+          catalog={SALEOUT_CATALOG}
+          allItems={ALL_ITEMS}
+          type="perishable"
+          saleDate={saleDate}
+          onSaleDateChange={setSaleDate}
+          branch={branch}
+          onBranchChange={setBranch}
+        />
       ) : (
-        <NonPerishablePage />
+        <NonPerishablePage
+          saleDate={saleDate}
+          onSaleDateChange={setSaleDate}
+          branch={branch}
+          onBranchChange={setBranch}
+        />
       )}
     </>
   );
