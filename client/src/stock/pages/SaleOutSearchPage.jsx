@@ -140,7 +140,7 @@ export default function SaleOutSearchPage() {
                 <th className="w-12 px-2 py-2 text-center border-r border-amber-400">Unit</th>
                 {cols.map((rec) => (
                   <th key={rec.id} colSpan={3} className="px-2 py-2 text-center border-r border-amber-400 min-w-[150px]">
-                    <div className="font-semibold">{new Date(rec.saleDate).getUTCDate()} · {fmtDate(rec.saleDate)}</div>
+                    <div className="font-semibold">{fmtDate(rec.saleDate)}</div>
                     {rec.branch && <div className="text-[10px] font-semibold opacity-90">{rec.branch}</div>}
                     {rec.notes && <div className="text-[10px] opacity-80">{rec.notes}</div>}
                     <div className="text-[10px] opacity-70">{rec.entryNo}</div>
