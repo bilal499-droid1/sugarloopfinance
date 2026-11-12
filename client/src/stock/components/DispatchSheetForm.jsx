@@ -37,8 +37,7 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const [saved, setSaved] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchError, setSearchError] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchInputRef = useRef(null);
 
   const tableRef = useRef(null);
 
@@ -53,23 +52,25 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
     if (target) { target.focus(); target.select(); }
   };
 
-  // Search: scroll to + focus the dispatched input for the matching item
-  const handleSearchSelect = (val) => {
-    setSearchQuery(val);
-    setSearchError('');
-    if (!val.trim()) return;
-    const name = val.trim();
-    if (!tableRef.current) return;
-    const input = tableRef.current.querySelector(`input[data-item-name="${CSS.escape(name)}"]`);
-    if (input) {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      input.focus();
-      input.select();
-      setSearchQuery('');
-    } else {
-      setSearchError(`"${name}" not found in catalog. Use "+ Add item" in the table below.`);
-    }
-  };
+  // Ctrl+F → focus search box
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Scroll to first match when query changes
+  useEffect(() => {
+    if (!searchQuery.trim() || !tableRef.current) return;
+    const first = tableRef.current.querySelector('[data-search-match="true"]');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [searchQuery]);
 
   // Load a saved record back into the form for editing
   const loadForEdit = (rec) => {
@@ -238,24 +239,9 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
     }
   };
 
-  const searchSuggestions = (() => {
-    const q = searchQuery.trim();
-    if (!q) return [];
-    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const full = q.toLowerCase();
-    return allItems
-      .map((it) => {
-        const name = it.name.toLowerCase();
-        const wordMatches = words.filter((w) => name.includes(w)).length;
-        if (wordMatches === 0) return null;
-        const score = (name === full ? 100 : 0) + (name.startsWith(full) ? 50 : 0) + wordMatches * 10 + (name.includes(full) ? 5 : 0);
-        return { it, score };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
-      .map((x) => x.it);
-  })();
+  const searchQ = searchQuery.trim().toLowerCase();
+  const isMatch = (name) => searchQ && name.toLowerCase().includes(searchQ);
+  const matchCount = searchQ ? allItems.filter((it) => isMatch(it.name)).length : 0;
 
   let serial = 0;
 
@@ -311,48 +297,26 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
             ))}
           </select>
         </div>
-        <div className="flex-1 min-w-48" style={{ position: 'relative' }}>
-          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Search Item</label>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setSearchError(''); setShowSuggestions(true); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') { setShowSuggestions(false); setSearchQuery(''); }
-              if (e.key === 'Enter' && searchSuggestions.length > 0) { e.preventDefault(); handleSearchSelect(searchSuggestions[0].name); setShowSuggestions(false); setSearchQuery(''); }
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder="Type to search items…"
-            autoComplete="off"
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-          {searchError && <p className="mt-0.5 text-xs text-rose-500">{searchError}</p>}
-          {showSuggestions && searchQuery.trim().length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999 }}
-              className="mt-1 rounded-md border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800">
-              {searchSuggestions.length > 0 ? searchSuggestions.map((it) => {
-                const words = searchQuery.trim().split(/\s+/).filter(Boolean);
-                const regex = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
-                const parts = it.name.split(regex);
-                return (
-                  <div
-                    key={it.name}
-                    onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(it.name); setShowSuggestions(false); setSearchQuery(''); }}
-                    className="cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-200 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 border-b border-slate-100 dark:border-slate-700 last:border-0"
-                  >
-                    {parts.map((part, i) =>
-                      words.some((w) => part.toLowerCase() === w.toLowerCase())
-                        ? <span key={i} className="font-semibold text-indigo-600 dark:text-indigo-400">{part}</span>
-                        : part
-                    )}
-                  </div>
-                );
-              }) : (
-                <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No matches — use "+ Add item" in the table.</div>
-              )}
-            </div>
-          )}
+        <div className="flex-1 min-w-48">
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+            Search Item
+            {searchQ && <span className="ml-2 text-indigo-500">{matchCount} match{matchCount !== 1 ? 'es' : ''}</span>}
+          </label>
+          <div className="relative">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
+              placeholder="Search items… (Ctrl+F)"
+              autoComplete="off"
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
+            />
+            {searchQ && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+            )}
+          </div>
         </div>
         <div className="flex-1 min-w-48">
           <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Notes (optional)</label>
@@ -400,12 +364,18 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                   const qty = Number(dispatched[item.name]) || 0;
                   const price = Number(prices[item.name]) || item.price;
                   const total = qty * price;
+                  const matched = isMatch(item.name);
                   return (
-                    <tr key={item.name} className={`border-t border-slate-100 ${cat.colorClass}`}>
+                    <tr key={item.name} data-search-match={matched || undefined} className={`border-t border-slate-100 ${matched ? 'bg-yellow-100 dark:bg-yellow-900/30' : cat.colorClass}`}>
                       <td className="px-3 py-1.5 text-center text-slate-400 text-xs border-r border-slate-200">
                         {serial}
                       </td>
-                      <td className="px-3 py-1.5">{item.name}</td>
+                      <td className="px-3 py-1.5">
+                        {matched ? (() => {
+                          const idx = item.name.toLowerCase().indexOf(searchQ);
+                          return <><span>{item.name.slice(0, idx)}</span><span className="bg-yellow-300 font-semibold text-slate-900 dark:bg-yellow-500 dark:text-slate-900">{item.name.slice(idx, idx + searchQ.length)}</span><span>{item.name.slice(idx + searchQ.length)}</span></>;
+                        })() : item.name}
+                      </td>
                       <td className="px-3 py-1.5 text-center">
                         <input
                           type="number"
