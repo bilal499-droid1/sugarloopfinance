@@ -238,9 +238,24 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
     }
   };
 
-  const searchSuggestions = searchQuery.trim().length > 0
-    ? allItems.filter((it) => it.name.toLowerCase().includes(searchQuery.trim().toLowerCase())).slice(0, 10)
-    : [];
+  const searchSuggestions = (() => {
+    const q = searchQuery.trim();
+    if (!q) return [];
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const full = q.toLowerCase();
+    return allItems
+      .map((it) => {
+        const name = it.name.toLowerCase();
+        const wordMatches = words.filter((w) => name.includes(w)).length;
+        if (wordMatches === 0) return null;
+        const score = (name === full ? 100 : 0) + (name.startsWith(full) ? 50 : 0) + wordMatches * 10 + (name.includes(full) ? 5 : 0);
+        return { it, score };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map((x) => x.it);
+  })();
 
   let serial = 0;
 
@@ -317,18 +332,20 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999 }}
               className="mt-1 rounded-md border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800">
               {searchSuggestions.length > 0 ? searchSuggestions.map((it) => {
-                const q = searchQuery.trim();
-                const idx = it.name.toLowerCase().indexOf(q.toLowerCase());
-                const before = it.name.slice(0, idx);
-                const match = it.name.slice(idx, idx + q.length);
-                const after = it.name.slice(idx + q.length);
+                const words = searchQuery.trim().split(/\s+/).filter(Boolean);
+                const regex = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+                const parts = it.name.split(regex);
                 return (
                   <div
                     key={it.name}
                     onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(it.name); setShowSuggestions(false); setSearchQuery(''); }}
                     className="cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-200 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 border-b border-slate-100 dark:border-slate-700 last:border-0"
                   >
-                    {before}<span className="font-semibold text-indigo-600 dark:text-indigo-400">{match}</span>{after}
+                    {parts.map((part, i) =>
+                      words.some((w) => part.toLowerCase() === w.toLowerCase())
+                        ? <span key={i} className="font-semibold text-indigo-600 dark:text-indigo-400">{part}</span>
+                        : part
+                    )}
                   </div>
                 );
               }) : (
