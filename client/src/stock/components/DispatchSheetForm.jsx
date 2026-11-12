@@ -168,7 +168,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
           <select
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100"
           >
             <option value="">— select branch —</option>
             {BRANCHES.map((b) => (
