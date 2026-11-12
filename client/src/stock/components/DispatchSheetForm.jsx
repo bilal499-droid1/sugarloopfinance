@@ -36,6 +36,8 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   const tableRef = useRef(null);
 
@@ -48,6 +50,24 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
     const idx = all.indexOf(e.currentTarget);
     const target = all[e.key === 'ArrowDown' ? idx + 1 : idx - 1];
     if (target) { target.focus(); target.select(); }
+  };
+
+  // Search: scroll to + focus the dispatched input for the matching item
+  const handleSearchSelect = (val) => {
+    setSearchQuery(val);
+    setSearchError('');
+    if (!val.trim()) return;
+    const name = val.trim();
+    if (!tableRef.current) return;
+    const input = tableRef.current.querySelector(`input[data-item-name="${CSS.escape(name)}"]`);
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input.focus();
+      input.select();
+      setSearchQuery('');
+    } else {
+      setSearchError(`"${name}" not found in catalog. Use "+ Add item" in the table below.`);
+    }
   };
 
   // Load a saved record back into the form for editing
@@ -125,6 +145,20 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
         const updated = { ...r, [field]: val };
         if (field === 'dispatched') updated.received = val;
         if (field === 'name') {
+          const trimmed = val.trim();
+          // Duplicate check: catalog items
+          const isCatalogDup = allItems.some((it) => it.name.toLowerCase() === trimmed.toLowerCase());
+          // Duplicate check: other custom rows across all categories
+          const allCustomNames = Object.values(prev).flat()
+            .filter((cr) => cr.id !== id)
+            .map((cr) => cr.name.trim().toLowerCase());
+          const isCustomDup = allCustomNames.includes(trimmed.toLowerCase());
+          updated.dupError = trimmed && (isCatalogDup || isCustomDup)
+            ? isCatalogDup
+              ? `"${trimmed}" is already in the catalog — enter qty directly in its row above.`
+              : `"${trimmed}" is already added.`
+            : '';
+          // Auto-fill price from catalog
           const catalogMatch = allItems.find((it) => it.name === val);
           if (catalogMatch) updated.price = getPrice(type, val, catalogMatch.price);
         }
@@ -175,6 +209,11 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
 
     if (!branch) {
       setError('Please select a branch.');
+      return;
+    }
+    const hasDups = Object.values(customRows).flat().some((r) => r.dupError);
+    if (hasDups) {
+      setError('Fix duplicate item names before saving.');
       return;
     }
     const lines = [...catalogLines, ...customLines];
@@ -253,6 +292,23 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
           </select>
         </div>
         <div className="flex-1 min-w-48">
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Search Item</label>
+          <input
+            type="text"
+            list={`search-items-${type}`}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchError(''); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearchSelect(searchQuery); } }}
+            onInput={(e) => {
+              const opt = document.querySelector(`#search-items-${type} option[value="${CSS.escape(e.target.value)}"]`);
+              if (opt) handleSearchSelect(e.target.value);
+            }}
+            placeholder="Type item name to jump to it…"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
+          />
+          {searchError && <p className="mt-0.5 text-xs text-rose-500">{searchError}</p>}
+        </div>
+        <div className="flex-1 min-w-48">
           <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Notes (optional)</label>
           <input
             type="text"
@@ -263,6 +319,9 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
           />
         </div>
       </div>
+      <datalist id={`search-items-${type}`}>
+        {allItems.map((it) => <option key={it.name} value={it.name} />)}
+      </datalist>
 
       {/* Datalist for custom-row autocomplete */}
       <datalist id={`catalog-items-${type}`}>
@@ -309,6 +368,7 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                           type="number"
                           min="0"
                           data-nav="dispatched"
+                          data-item-name={item.name}
                           value={dispatched[item.name]}
                           onChange={(e) => setDispatchedQty(item.name, e.target.value)}
                           onKeyDown={(e) => handleArrow(e, 'dispatched')}
@@ -357,8 +417,13 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                           value={row.name}
                           placeholder="Item name"
                           onChange={(e) => updateCustomRow(cat.category, row.id, 'name', e.target.value)}
-                          className="w-full rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-slate-100"
+                          className={`w-full rounded border px-2 py-0.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 ${
+                            row.dupError
+                              ? 'border-rose-400 bg-rose-50 focus:ring-rose-400 dark:border-rose-600 dark:bg-rose-900/20'
+                              : 'border-indigo-200 bg-indigo-50 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-indigo-900/30'
+                          } dark:text-slate-100`}
                         />
+                        {row.dupError && <p className="mt-0.5 text-xs text-rose-500 leading-tight">{row.dupError}</p>}
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <input
