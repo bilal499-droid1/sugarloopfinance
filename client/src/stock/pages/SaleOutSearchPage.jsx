@@ -3,6 +3,7 @@ import { Printer, Trash2 } from 'lucide-react';
 import { useSaleOutStore } from '../useSaleOutStore';
 import { SALEOUT_CATALOG, ALL_ITEMS } from '../catalog/saleOutCatalog';
 import { NP_CATALOG, NP_ALL_ITEMS } from '../catalog/nonPerishableCatalog';
+import { BRANCHES } from '../components/DispatchSheetForm';
 import PageHeader from '../../components/common/PageHeader';
 import { formatCurrency } from '../../utils/format';
 import { useCan } from '../../utils/permissions';
@@ -48,15 +49,16 @@ export default function SaleOutSearchPage() {
   const [activeTab, setActiveTab] = useState('perishable');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
+  const [branch, setBranch] = useState('');
 
   const catalog = activeTab === 'perishable' ? SALEOUT_CATALOG : NP_CATALOG;
   const allItems = activeTab === 'perishable' ? ALL_ITEMS : NP_ALL_ITEMS;
 
   useEffect(() => {
-    fetchRecords({ from, to, type: activeTab });
+    fetchRecords({ from, to, type: activeTab, ...(branch && { branch }) });
   }, [activeTab]);
 
-  const handleSearch = () => fetchRecords({ from, to, type: activeTab });
+  const handleSearch = () => fetchRecords({ from, to, type: activeTab, ...(branch && { branch }) });
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -99,6 +101,16 @@ export default function SaleOutSearchPage() {
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
         </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">Branch</label>
+          <select value={branch} onChange={(e) => setBranch(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="">All Branches</option>
+            {BRANCHES.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
         <button onClick={handleSearch}
           className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">
           Search
@@ -129,6 +141,7 @@ export default function SaleOutSearchPage() {
                 {cols.map((rec) => (
                   <th key={rec.id} colSpan={3} className="px-2 py-2 text-center border-r border-amber-400 min-w-[150px]">
                     <div className="font-semibold">{new Date(rec.saleDate).getUTCDate()} · {fmtDate(rec.saleDate)}</div>
+                    {rec.branch && <div className="text-[10px] font-semibold opacity-90">{rec.branch}</div>}
                     {rec.notes && <div className="text-[10px] opacity-80">{rec.notes}</div>}
                     <div className="text-[10px] opacity-70">{rec.entryNo}</div>
                   </th>

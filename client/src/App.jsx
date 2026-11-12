@@ -14,6 +14,7 @@ import InventoryPage from './pages/InventoryPage';
 import LiabilitiesPage from './pages/LiabilitiesPage';
 import UsersPage from './pages/UsersPage';
 import LedgerPeriodsPage from './pages/LedgerPeriodsPage';
+import WMSPage from './pages/WMSPage';
 import StockLayout, { BASE as STOCK_BASE } from './stock/StockLayout';
 import PurchasePage from './stock/pages/PurchasePage';
 import EditPurchasePage from './stock/pages/EditPurchasePage';
@@ -67,15 +68,6 @@ export default function App() {
           <Route path="edit-return" element={<EditReturnPage />} />
           <Route path="print-purchase" element={<PrintPurchasePage />} />
           <Route path="purchase-search" element={<PurchaseSearchPage />} />
-          <Route path="stock-refresh" element={<StockRefreshPage />} />
-          <Route path="consumption" element={<ConsumptionPage />} />
-          <Route path="sale" element={<SalePage />} />
-          <Route path="edit-sale" element={<EditSalePage />} />
-          <Route path="print-sale" element={<PrintSalePage />} />
-          <Route path="sale-search" element={<SaleSearchPage />} />
-          <Route path="customers" element={<CustomersPage />} />
-          <Route path="saleout" element={<SaleOutPage />} />
-          <Route path="saleout-search" element={<SaleOutSearchPage />} />
           <Route path="*" element={<Navigate to="purchase" replace />} />
         </Route>
         <Route element={<AppLayout />}>
@@ -108,6 +100,18 @@ export default function App() {
               </RequirePermission>
             }
           />
+          <Route path="wms" element={<WMSPage />}>
+            <Route index element={<Navigate to="stock-refresh" replace />} />
+            <Route path="stock-refresh" element={<StockRefreshPage />} />
+            <Route path="consumption" element={<ConsumptionPage />} />
+            <Route path="sale" element={<SalePage />} />
+            <Route path="edit-sale" element={<EditSalePage />} />
+            <Route path="print-sale" element={<PrintSalePage />} />
+            <Route path="sale-search" element={<SaleSearchPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="saleout" element={<SaleOutPage />} />
+            <Route path="saleout-search" element={<SaleOutSearchPage />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

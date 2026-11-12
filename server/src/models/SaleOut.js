@@ -23,6 +23,7 @@ const saleOutSchema = new mongoose.Schema(
     type: { type: String, enum: ['perishable', 'nonperishable'], default: 'perishable' },
     lines: [saleOutLineSchema],
     grandTotal: { type: Number, default: 0 },
+    branch: { type: String, default: '' },
     notes: String,
     createdBy: String,
   },

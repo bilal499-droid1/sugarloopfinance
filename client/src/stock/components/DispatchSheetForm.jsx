@@ -6,6 +6,14 @@ import { formatCurrency } from '../../utils/format';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+export const BRANCHES = [
+  'DHA Phase 1',
+  'DHA Phase 2',
+  'Bahria Phase 4',
+  'NUST 1',
+  'NUST 2',
+];
+
 let _rowId = 0;
 const newRow = () => ({ id: ++_rowId, name: '', price: '', dispatched: '', received: '' });
 
@@ -17,6 +25,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
   const blankCustomRows = () => Object.fromEntries(catalog.map((cat) => [cat.category, []]));
 
   const [saleDate, setSaleDate] = useState(today());
+  const [branch, setBranch] = useState('');
   const [notes, setNotes] = useState('');
   const [dispatched, setDispatched] = useState(blankQtys);
   const [received, setReceived] = useState(blankQtys);
@@ -94,6 +103,10 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
         }))
     );
 
+    if (!branch) {
+      setError('Please select a branch.');
+      return;
+    }
     const lines = [...catalogLines, ...customLines];
     if (!lines.length) {
       setError('Enter at least one item with qty > 0.');
@@ -102,12 +115,13 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
 
     setSaving(true);
     try {
-      const record = await createRecord({ saleDate, lines, notes, type });
+      const record = await createRecord({ saleDate, branch, lines, notes, type });
       setSaved(record);
       setDispatched(blankQtys());
       setReceived(blankQtys());
       setPrices(blankPrices());
       setCustomRows(blankCustomRows());
+      setBranch('');
       setNotes('');
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to save.');
@@ -138,7 +152,7 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
         <p className="rounded-md bg-rose-50 px-4 py-2 text-sm text-rose-700">{error}</p>
       )}
 
-      {/* Date + Notes */}
+      {/* Date + Branch + Notes */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Date</label>
@@ -148,6 +162,19 @@ export default function DispatchSheetForm({ catalog, allItems, type }) {
             onChange={(e) => setSaleDate(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">Branch <span className="text-rose-400">*</span></label>
+          <select
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="">— select branch —</option>
+            {BRANCHES.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1 min-w-48">
           <label className="mb-1 block text-xs font-medium text-slate-600">Notes (optional)</label>
