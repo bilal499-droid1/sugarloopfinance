@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useSaleOutStore } from '../useSaleOutStore';
 import { useItemPricesStore } from '../useItemPricesStore';
@@ -18,6 +18,7 @@ const newRow = () => ({ id: ++_rowId, name: '', price: '', dispatched: '', recei
 
 export default function DispatchSheetForm({ catalog, allItems, type, saleDate, onSaleDateChange, branch, onBranchChange }) {
   const createRecord = useSaleOutStore((s) => s.createRecord);
+  const updateRecord = useSaleOutStore((s) => s.updateRecord);
   const storePricesMap = useItemPricesStore((s) => s.prices);
   const fetchPrices = useItemPricesStore((s) => s.fetchPrices);
   const getPrice = useItemPricesStore((s) => s.getPrice);
@@ -34,6 +35,57 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+
+  const tableRef = useRef(null);
+
+  // Arrow-key navigation between rows in the same column
+  const handleArrow = (e, navKey) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    if (!tableRef.current) return;
+    const all = Array.from(tableRef.current.querySelectorAll(`input[data-nav="${navKey}"]`));
+    const idx = all.indexOf(e.currentTarget);
+    const target = all[e.key === 'ArrowDown' ? idx + 1 : idx - 1];
+    if (target) { target.focus(); target.select(); }
+  };
+
+  // Load a saved record back into the form for editing
+  const loadForEdit = (rec) => {
+    const catalogMap = Object.fromEntries(
+      rec.lines
+        .filter((l) => allItems.some((it) => it.name === l.itemName))
+        .map((l) => [l.itemName, l])
+    );
+    const newDispatched = {};
+    const newReceived = {};
+    const newPrices = {};
+    allItems.forEach((it) => {
+      const l = catalogMap[it.name];
+      newDispatched[it.name] = l?.qty ?? '';
+      newReceived[it.name] = l?.received ?? '';
+      newPrices[it.name] = l?.price ?? getPrice(type, it.name, it.price);
+    });
+    setDispatched(newDispatched);
+    setReceived(newReceived);
+    setPrices(newPrices);
+    setNotes(rec.notes || '');
+
+    const newCustomRows = Object.fromEntries(catalog.map((cat) => [cat.category, []]));
+    rec.lines
+      .filter((l) => !allItems.some((it) => it.name === l.itemName))
+      .forEach((l) => {
+        if (newCustomRows[l.category] !== undefined) {
+          newCustomRows[l.category].push({ id: ++_rowId, name: l.itemName, price: l.price, dispatched: l.qty, received: l.received ?? l.qty });
+        }
+      });
+    setCustomRows(newCustomRows);
+
+    onSaleDateChange(new Date(rec.saleDate).toISOString().slice(0, 10));
+    onBranchChange(rec.branch || '');
+    setEditingId(rec.id);
+    setSaved(null);
+  };
 
   // Fetch stored prices on mount and re-sync whenever the store updates
   useEffect(() => { fetchPrices(type); }, [type]);
@@ -72,6 +124,10 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
         if (r.id !== id) return r;
         const updated = { ...r, [field]: val };
         if (field === 'dispatched') updated.received = val;
+        if (field === 'name') {
+          const catalogMatch = allItems.find((it) => it.name === val);
+          if (catalogMatch) updated.price = getPrice(type, val, catalogMatch.price);
+        }
         return updated;
       }),
     }));
@@ -125,8 +181,11 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
 
     setSaving(true);
     try {
-      const record = await createRecord({ saleDate, branch, lines, notes, type });
+      const record = editingId
+        ? await updateRecord(editingId, { saleDate, branch, lines, notes, type })
+        : await createRecord({ saleDate, branch, lines, notes, type });
       setSaved(record);
+      setEditingId(null);
       setDispatched(blankQtys());
       setReceived(blankQtys());
       setPrices(blankPrices());
@@ -151,9 +210,17 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
           <span>
             <strong>{saved.entryNo}</strong> saved — {formatCurrency(saved.grandTotal)}
           </span>
-          <button className="ml-auto text-xs underline" onClick={() => setSaved(null)}>
-            Dismiss
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              className="rounded border border-emerald-400 px-3 py-0.5 text-xs font-medium hover:bg-emerald-100"
+              onClick={() => loadForEdit(saved)}
+            >
+              Edit
+            </button>
+            <button className="text-xs underline" onClick={() => setSaved(null)}>
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
@@ -162,18 +229,18 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
       )}
 
       {/* Date + Branch + Notes */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Date</label>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Date</label>
           <input
             type="date"
             value={saleDate}
             onChange={(e) => onSaleDateChange(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Branch <span className="text-rose-400">*</span></label>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Branch <span className="text-rose-400">*</span></label>
           <select
             value={branch}
             onChange={(e) => onBranchChange(e.target.value)}
@@ -186,19 +253,24 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
           </select>
         </div>
         <div className="flex-1 min-w-48">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Notes (optional)</label>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Notes (optional)</label>
           <input
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Morning shift"
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
 
+      {/* Datalist for custom-row autocomplete */}
+      <datalist id={`catalog-items-${type}`}>
+        {allItems.map((it) => <option key={it.name} value={it.name} />)}
+      </datalist>
+
       {/* Entry table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div ref={tableRef} className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <table className="min-w-full text-sm">
           <tbody>
             {catalog.map((cat) => (
@@ -236,18 +308,22 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                         <input
                           type="number"
                           min="0"
+                          data-nav="dispatched"
                           value={dispatched[item.name]}
                           onChange={(e) => setDispatchedQty(item.name, e.target.value)}
-                          className="w-20 rounded border border-slate-300 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          onKeyDown={(e) => handleArrow(e, 'dispatched')}
+                          className="w-20 rounded border border-slate-300 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <input
                           type="number"
                           min="0"
+                          data-nav="received"
                           value={received[item.name]}
                           onChange={(e) => setReceivedQty(item.name, e.target.value)}
-                          className="w-20 rounded border border-slate-300 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          onKeyDown={(e) => handleArrow(e, 'received')}
+                          className="w-20 rounded border border-slate-300 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-right">
@@ -277,40 +353,47 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                       <td className="px-3 py-1.5">
                         <input
                           type="text"
+                          list={`catalog-items-${type}`}
                           value={row.name}
                           placeholder="Item name"
                           onChange={(e) => updateCustomRow(cat.category, row.id, 'name', e.target.value)}
-                          className="w-full rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          className="w-full rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <input
                           type="number"
                           min="0"
+                          data-nav="dispatched"
                           value={row.dispatched}
                           placeholder="0"
                           onChange={(e) => updateCustomRow(cat.category, row.id, 'dispatched', e.target.value)}
-                          className="w-20 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          onKeyDown={(e) => handleArrow(e, 'dispatched')}
+                          className="w-20 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <input
                           type="number"
                           min="0"
+                          data-nav="received"
                           value={row.received}
                           placeholder="0"
                           onChange={(e) => updateCustomRow(cat.category, row.id, 'received', e.target.value)}
-                          className="w-20 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          onKeyDown={(e) => handleArrow(e, 'received')}
+                          className="w-20 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-right">
                         <input
                           type="number"
                           min="0"
+                          data-nav="price"
                           value={row.price}
                           placeholder="0"
                           onChange={(e) => updateCustomRow(cat.category, row.id, 'price', e.target.value)}
-                          className="w-24 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-right text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"
+                          onKeyDown={(e) => handleArrow(e, 'price')}
+                          className="w-24 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-right text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-slate-100"
                         />
                       </td>
                       <td className="px-3 py-1.5 text-right tabular-nums font-medium">
@@ -344,9 +427,9 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-slate-300 bg-green-100 font-semibold">
-              <td colSpan={5} className="px-3 py-2 text-right text-sm">Grand Total</td>
-              <td className="px-3 py-2 text-right tabular-nums text-green-800">{formatCurrency(grandTotal)}</td>
+            <tr className="border-t-2 border-slate-300 bg-green-100 font-semibold dark:border-slate-600 dark:bg-green-900/30">
+              <td colSpan={5} className="px-3 py-2 text-right text-sm dark:text-slate-200">Grand Total</td>
+              <td className="px-3 py-2 text-right tabular-nums text-green-800 dark:text-green-300">{formatCurrency(grandTotal)}</td>
               <td />
             </tr>
           </tfoot>
@@ -360,7 +443,7 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
           disabled={saving}
           className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
         >
-          {saving ? 'Saving…' : 'Save Entry'}
+          {saving ? 'Saving…' : editingId ? 'Update Entry' : 'Save Entry'}
         </button>
       </div>
     </>

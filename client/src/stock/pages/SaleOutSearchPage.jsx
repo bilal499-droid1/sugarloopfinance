@@ -21,7 +21,7 @@ const fmtDate = (iso) => {
 
 function Tabs({ active, onChange }) {
   return (
-    <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 w-fit print:hidden">
+    <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 w-fit print:hidden dark:border-slate-700 dark:bg-slate-800">
       {[
         { key: 'perishable', label: 'Perishable' },
         { key: 'nonperishable', label: 'Non-Perishable' },
@@ -31,8 +31,8 @@ function Tabs({ active, onChange }) {
           onClick={() => onChange(t.key)}
           className={`rounded-lg px-5 py-1.5 text-sm font-medium transition-colors ${
             active === t.key
-              ? 'bg-white text-indigo-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-400'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
           }`}
         >
           {t.label}
@@ -49,115 +49,94 @@ export default function SaleOutSearchPage() {
   const [activeTab, setActiveTab] = useState('perishable');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
-  const [branch, setBranch] = useState('');
 
   const catalog = activeTab === 'perishable' ? SALEOUT_CATALOG : NP_CATALOG;
   const allItems = activeTab === 'perishable' ? ALL_ITEMS : NP_ALL_ITEMS;
 
   useEffect(() => {
-    fetchRecords({ from, to, type: activeTab, ...(branch && { branch }) });
+    fetchRecords({ from, to, type: activeTab });
   }, [activeTab]);
 
-  const handleSearch = () => fetchRecords({ from, to, type: activeTab, ...(branch && { branch }) });
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
+  const handleSearch = () => fetchRecords({ from, to, type: activeTab });
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this Sale Out entry?')) return;
     await deleteRecord(id);
+    fetchRecords({ from, to, type: activeTab });
   };
 
-  const cols = [...records].sort((a, b) => {
-    const dA = new Date(a.saleDate), dB = new Date(b.saleDate);
-    return dA - dB || new Date(a.createdAt) - new Date(b.createdAt);
+  // Group records by date key → branch
+  const dateMap = {};
+  records.forEach((rec) => {
+    const dk = new Date(rec.saleDate).toISOString().slice(0, 10);
+    if (!dateMap[dk]) dateMap[dk] = {};
+    dateMap[dk][rec.branch || ''] = rec;
+  });
+  const dates = Object.keys(dateMap).sort();
+
+  // Build flat column list: one entry per date×branch combination
+  const cols = [];
+  dates.forEach((dk) => {
+    BRANCHES.forEach((br) => {
+      cols.push({ dk, br, rec: dateMap[dk]?.[br] ?? null });
+    });
   });
 
-  const getQty = (record, itemName) => {
-    const line = record.lines.find((l) => l.itemName === itemName);
+  const getQty = (rec, itemName) => {
+    if (!rec) return 0;
+    const line = rec.lines.find((l) => l.itemName === itemName);
     return line?.qty ?? 0;
-  };
-  const getPrice = (record, itemName) => {
-    const line = record.lines.find((l) => l.itemName === itemName);
-    return line?.price ?? allItems.find((i) => i.name === itemName)?.price ?? 0;
   };
 
   return (
     <>
-      <PageHeader title="Sale Out — Browse" subtitle="View all sale out entries in a date range." />
+      <PageHeader title="Sale Out — Browse" subtitle="View all sale out entries grouped by date and branch." />
 
-      <Tabs active={activeTab} onChange={handleTabChange} />
+      <Tabs active={activeTab} onChange={setActiveTab} />
 
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 print:hidden">
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 print:hidden dark:border-slate-700 dark:bg-slate-800">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">From</label>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">From</label>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">To</label>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">To</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Branch</label>
-          <select value={branch} onChange={(e) => setBranch(e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100">
-            <option value="">All Branches</option>
-            {BRANCHES.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
         </div>
         <button onClick={handleSearch}
           className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">
           Search
         </button>
         <button onClick={() => window.print()}
-          className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+          className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
           <Printer className="h-4 w-4" /> Print
         </button>
       </div>
 
       {error && <p className="rounded-md bg-rose-50 px-4 py-2 text-sm text-rose-700">{error}</p>}
-      {loading && <p className="text-sm text-slate-500">Loading…</p>}
+      {loading && <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>}
 
-      {!loading && cols.length === 0 && (
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+      {!loading && dates.length === 0 && (
+        <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
           No {activeTab === 'perishable' ? 'Perishable' : 'Non-Perishable'} entries found for this date range.
         </p>
       )}
 
       {!loading && cols.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <table className="min-w-full text-xs">
             <thead>
               <tr className="bg-amber-500 text-white">
                 <th className="w-28 px-2 py-2 text-left border-r border-amber-400">Category</th>
                 <th className="w-40 px-2 py-2 text-left border-r border-amber-400">Item Name</th>
                 <th className="w-12 px-2 py-2 text-center border-r border-amber-400">Unit</th>
-                {cols.map((rec) => (
-                  <th key={rec.id} colSpan={3} className="px-2 py-2 text-center border-r border-amber-400 min-w-[150px]">
-                    <div className="font-semibold">{fmtDate(rec.saleDate)}</div>
-                    {rec.branch && <div className="text-[10px] font-semibold opacity-90">{rec.branch}</div>}
-                    {rec.notes && <div className="text-[10px] opacity-80">{rec.notes}</div>}
-                    <div className="text-[10px] opacity-70">{rec.entryNo}</div>
-                  </th>
-                ))}
-              </tr>
-              <tr className="bg-amber-400 text-white text-[10px]">
-                <th className="px-2 py-1 border-r border-amber-300" />
-                <th className="px-2 py-1 border-r border-amber-300" />
-                <th className="px-2 py-1 border-r border-amber-300" />
-                {cols.map((rec) => (
-                  <th key={rec.id} colSpan={3} className="border-r border-amber-300">
-                    <div className="grid grid-cols-3 divide-x divide-amber-300">
-                      <span className="px-2 py-0.5 text-center">Qty</span>
-                      <span className="px-2 py-0.5 text-center">Price</span>
-                      <span className="px-2 py-0.5 text-center">Daily T</span>
-                    </div>
+                {cols.map((col) => (
+                  <th key={`${col.dk}-${col.br}`} className="px-2 py-2 text-center border-r border-amber-400 min-w-[90px]">
+                    <div className="font-semibold">{fmtDate(col.dk)}</div>
+                    <div className="text-[11px] font-medium opacity-90 mt-0.5">{col.br}</div>
                   </th>
                 ))}
               </tr>
@@ -177,17 +156,11 @@ export default function SaleOutSearchPage() {
                     )}
                     <td className="px-2 py-1 border-r border-slate-100">{item.name}</td>
                     <td className="px-2 py-1 text-center text-slate-400 border-r border-slate-100">per</td>
-                    {cols.map((rec) => {
-                      const qty = getQty(rec, item.name);
-                      const price = getPrice(rec, item.name);
-                      const total = qty * price;
+                    {cols.map((col) => {
+                      const qty = getQty(col.rec, item.name);
                       return (
-                        <td key={rec.id} colSpan={3} className="border-r border-slate-100 p-0">
-                          <div className="grid grid-cols-3 divide-x divide-slate-100">
-                            <span className="px-2 py-1 text-center tabular-nums">{qty || ''}</span>
-                            <span className="px-2 py-1 text-center tabular-nums text-slate-500">{price > 0 ? price.toFixed(2) : ''}</span>
-                            <span className="px-2 py-1 text-center tabular-nums font-medium">{total > 0 ? total : ''}</span>
-                          </div>
+                        <td key={`${col.dk}-${col.br}`} className="px-2 py-1 text-center tabular-nums border-r border-slate-100">
+                          {qty > 0 ? qty : <span className="text-slate-300 dark:text-slate-600">0</span>}
                         </td>
                       );
                     })}
@@ -196,29 +169,29 @@ export default function SaleOutSearchPage() {
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-slate-300 bg-green-200 font-semibold text-green-900">
-                <td colSpan={3} className="px-2 py-2 text-right text-xs border-r border-slate-300">Daily Total</td>
-                {cols.map((rec) => (
-                  <td key={rec.id} colSpan={3} className="border-r border-slate-300 p-0">
-                    <div className="grid grid-cols-3 divide-x divide-slate-300">
-                      <span />
-                      <span />
-                      <span className="px-2 py-2 text-center tabular-nums">{rec.grandTotal}</span>
-                    </div>
+              <tr className="border-t-2 border-slate-300 bg-green-200 font-semibold text-green-900 dark:bg-green-900/30 dark:text-green-200 dark:border-slate-600">
+                <td colSpan={3} className="px-2 py-2 text-right text-xs border-r border-slate-300 dark:border-slate-600">Daily Total</td>
+                {cols.map((col) => (
+                  <td key={`${col.dk}-${col.br}`} className="px-2 py-2 text-center tabular-nums border-r border-slate-300 dark:border-slate-600">
+                    {col.rec
+                      ? formatCurrency(col.rec.grandTotal)
+                      : <span className="text-slate-300 dark:text-slate-600 font-normal">—</span>}
                   </td>
                 ))}
               </tr>
               {can('manageUsers') && (
-                <tr className="print:hidden bg-slate-50 border-t border-slate-200">
-                  <td colSpan={3} className="px-2 py-1 text-xs text-slate-400 border-r border-slate-200">Actions</td>
-                  {cols.map((rec) => (
-                    <td key={rec.id} colSpan={3} className="px-2 py-1 text-center border-r border-slate-200">
-                      <button
-                        onClick={() => handleDelete(rec.id)}
-                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-rose-600 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" /> Del
-                      </button>
+                <tr className="print:hidden bg-slate-50 border-t border-slate-200 dark:bg-slate-900/50 dark:border-slate-700">
+                  <td colSpan={3} className="px-2 py-1 text-xs text-slate-400 border-r border-slate-200 dark:border-slate-700">Actions</td>
+                  {cols.map((col) => (
+                    <td key={`${col.dk}-${col.br}`} className="px-2 py-1 text-center border-r border-slate-200 dark:border-slate-700">
+                      {col.rec && (
+                        <button
+                          onClick={() => handleDelete(col.rec.id)}
+                          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                        >
+                          <Trash2 className="h-3 w-3" /> Del
+                        </button>
+                      )}
                     </td>
                   ))}
                 </tr>
