@@ -16,6 +16,8 @@ import saleRoutes from './routes/saleRoutes.js';
 import saleOutRoutes from './routes/saleOutRoutes.js';
 import periodRoutes from './routes/periodRoutes.js';
 import itemPriceRoutes from './routes/itemPriceRoutes.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import payrollRoutes from './routes/payrollRoutes.js';
 import { announceChanges, liveStream } from './services/live.js';
 import { startPeriodScheduler } from './services/periodScheduler.js';
 
@@ -48,6 +50,8 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/saleout', saleOutRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/item-prices', itemPriceRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/payroll', payrollRoutes);
 
 app.use(errorHandler);
 

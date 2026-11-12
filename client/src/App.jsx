@@ -15,6 +15,10 @@ import LiabilitiesPage from './pages/LiabilitiesPage';
 import UsersPage from './pages/UsersPage';
 import LedgerPeriodsPage from './pages/LedgerPeriodsPage';
 import WMSPage from './pages/WMSPage';
+import PayrollPage from './payroll/pages/PayrollPage';
+import EmployeesPage from './payroll/pages/EmployeesPage';
+import PayrollEntryPage from './payroll/pages/PayrollEntryPage';
+import PayrollBrowsePage from './payroll/pages/PayrollBrowsePage';
 import StockLayout, { BASE as STOCK_BASE } from './stock/StockLayout';
 import PurchasePage from './stock/pages/PurchasePage';
 import EditPurchasePage from './stock/pages/EditPurchasePage';
@@ -101,6 +105,12 @@ export default function App() {
               </RequirePermission>
             }
           />
+          <Route path="payroll" element={<PayrollPage />}>
+            <Route index element={<Navigate to="employees" replace />} />
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="entry" element={<PayrollEntryPage />} />
+            <Route path="browse" element={<PayrollBrowsePage />} />
+          </Route>
           <Route path="wms" element={<WMSPage />}>
             <Route index element={<Navigate to="stock-refresh" replace />} />
             <Route path="stock-refresh" element={<StockRefreshPage />} />
