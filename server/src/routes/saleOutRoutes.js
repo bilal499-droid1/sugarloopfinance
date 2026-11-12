@@ -43,7 +43,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const { saleDate, lines, notes, type, branch } = req.body;
   if (!saleDate) throw httpError(400, 'Sale date is required');
-  if (!lines?.length) throw httpError(400, 'At least one line with qty > 0 is required');
 
   const doc = new SaleOut({
     saleDate: new Date(saleDate),

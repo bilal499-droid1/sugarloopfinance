@@ -122,10 +122,6 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
       return;
     }
     const lines = [...catalogLines, ...customLines];
-    if (!lines.length) {
-      setError('Enter at least one item with qty > 0.');
-      return;
-    }
 
     setSaving(true);
     try {
