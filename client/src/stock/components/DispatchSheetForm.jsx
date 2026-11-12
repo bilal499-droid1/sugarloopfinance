@@ -238,6 +238,10 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
     }
   };
 
+  const searchSuggestions = searchQuery.trim().length > 0
+    ? allItems.filter((it) => it.name.toLowerCase().includes(searchQuery.trim().toLowerCase())).slice(0, 10)
+    : [];
+
   let serial = 0;
 
   return (
@@ -292,41 +296,46 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
             ))}
           </select>
         </div>
-        <div className="flex-1 min-w-48 relative">
+        <div className="flex-1 min-w-48" style={{ position: 'relative' }}>
           <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Search Item</label>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setSearchError(''); setShowSuggestions(true); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearchSelect(searchQuery); setShowSuggestions(false); } if (e.key === 'Escape') setShowSuggestions(false); }}
-            onFocus={() => { if (searchQuery) setShowSuggestions(true); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') { setShowSuggestions(false); setSearchQuery(''); }
+              if (e.key === 'Enter' && searchSuggestions.length > 0) { e.preventDefault(); handleSearchSelect(searchSuggestions[0].name); setShowSuggestions(false); setSearchQuery(''); }
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="Type to search items…"
             autoComplete="off"
             className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           {searchError && <p className="mt-0.5 text-xs text-rose-500">{searchError}</p>}
-          {showSuggestions && searchQuery.trim().length > 0 && (() => {
-            const q = searchQuery.trim().toLowerCase();
-            const matches = allItems.filter((it) => it.name.toLowerCase().includes(q)).slice(0, 8);
-            return matches.length > 0 ? (
-              <ul className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-800">
-                {matches.map((it) => (
-                  <li
+          {showSuggestions && searchQuery.trim().length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999 }}
+              className="mt-1 rounded-md border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800">
+              {searchSuggestions.length > 0 ? searchSuggestions.map((it) => {
+                const q = searchQuery.trim();
+                const idx = it.name.toLowerCase().indexOf(q.toLowerCase());
+                const before = it.name.slice(0, idx);
+                const match = it.name.slice(idx, idx + q.length);
+                const after = it.name.slice(idx + q.length);
+                return (
+                  <div
                     key={it.name}
-                    onMouseDown={() => { handleSearchSelect(it.name); setShowSuggestions(false); }}
-                    className="cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-200 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300"
+                    onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(it.name); setShowSuggestions(false); setSearchQuery(''); }}
+                    className="cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-200 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 border-b border-slate-100 dark:border-slate-700 last:border-0"
                   >
-                    {it.name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400 shadow-lg dark:border-slate-600 dark:bg-slate-800">
-                No matches — use "+ Add item" below.
-              </div>
-            );
-          })()}
+                    {before}<span className="font-semibold text-indigo-600 dark:text-indigo-400">{match}</span>{after}
+                  </div>
+                );
+              }) : (
+                <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No matches — use "+ Add item" in the table.</div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-48">
           <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Notes (optional)</label>
