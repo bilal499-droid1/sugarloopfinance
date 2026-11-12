@@ -8,9 +8,10 @@ import PageHeader from '../../components/common/PageHeader';
 import { formatCurrency } from '../../utils/format';
 import { useCan } from '../../utils/permissions';
 
-const monthStart = () => {
+const ninetyDaysAgo = () => {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  d.setDate(d.getDate() - 90);
+  return d.toISOString().slice(0, 10);
 };
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -47,7 +48,7 @@ export default function SaleOutSearchPage() {
   const can = useCan();
 
   const [activeTab, setActiveTab] = useState('perishable');
-  const [from, setFrom] = useState(monthStart());
+  const [from, setFrom] = useState(ninetyDaysAgo());
   const [to, setTo] = useState(today());
   const [editColKey, setEditColKey] = useState(null);
   const [editQtys, setEditQtys] = useState({});
@@ -107,20 +108,28 @@ export default function SaleOutSearchPage() {
     }
   };
 
-  // Group records by date key → branch
+  // Group records by date key → branch (most recent entry wins per slot)
   const dateMap = {};
-  records.forEach((rec) => {
+  [...records].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach((rec) => {
     const dk = new Date(rec.saleDate).toISOString().slice(0, 10);
     if (!dateMap[dk]) dateMap[dk] = {};
-    dateMap[dk][rec.branch || ''] = rec;
+    const brKey = rec.branch || '';
+    if (!dateMap[dk][brKey]) dateMap[dk][brKey] = rec; // first = most recent
   });
   const dates = Object.keys(dateMap).sort();
 
-  // Build flat column list: one entry per date×branch combination
+  // Build flat column list: all 5 known branches + any extra (e.g. no-branch entries)
   const cols = [];
   dates.forEach((dk) => {
+    const knownBranchSet = new Set(BRANCHES);
     BRANCHES.forEach((br) => {
       cols.push({ dk, br, rec: dateMap[dk]?.[br] ?? null });
+    });
+    // Show any entries saved without a recognised branch (e.g. old records)
+    Object.keys(dateMap[dk]).forEach((brKey) => {
+      if (!knownBranchSet.has(brKey)) {
+        cols.push({ dk, br: brKey || '(No Branch)', rec: dateMap[dk][brKey] });
+      }
     });
   });
 
