@@ -1,7 +1,7 @@
 // Non-perishable master catalog — prices only changeable here.
 export const NP_CATALOG = [
   {
-    category: 'Motion Vendor',
+    category: 'Monion Vendor',
     colorClass: '',
     headerClass: 'bg-blue-500 text-white',
     items: [
