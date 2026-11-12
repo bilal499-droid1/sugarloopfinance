@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Printer, Trash2 } from 'lucide-react';
+import { Check, Pencil, Printer, Trash2, X } from 'lucide-react';
 import { useSaleOutStore } from '../useSaleOutStore';
 import { SALEOUT_CATALOG, ALL_ITEMS } from '../catalog/saleOutCatalog';
 import { NP_CATALOG, NP_ALL_ITEMS } from '../catalog/nonPerishableCatalog';
@@ -43,12 +43,15 @@ function Tabs({ active, onChange }) {
 }
 
 export default function SaleOutSearchPage() {
-  const { records, loading, error, fetchRecords, deleteRecord } = useSaleOutStore();
+  const { records, loading, error, fetchRecords, deleteRecord, updateRecord } = useSaleOutStore();
   const can = useCan();
 
   const [activeTab, setActiveTab] = useState('perishable');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
+  const [editColKey, setEditColKey] = useState(null);
+  const [editQtys, setEditQtys] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const catalog = activeTab === 'perishable' ? SALEOUT_CATALOG : NP_CATALOG;
   const allItems = activeTab === 'perishable' ? ALL_ITEMS : NP_ALL_ITEMS;
@@ -63,6 +66,45 @@ export default function SaleOutSearchPage() {
     if (!confirm('Delete this Sale Out entry?')) return;
     await deleteRecord(id);
     fetchRecords({ from, to, type: activeTab });
+  };
+
+  const startEdit = (col) => {
+    const qtys = {};
+    allItems.forEach((it) => {
+      const line = col.rec?.lines.find((l) => l.itemName === it.name);
+      qtys[it.name] = line?.qty ?? 0;
+    });
+    setEditQtys(qtys);
+    setEditColKey(`${col.dk}-${col.br}`);
+  };
+
+  const cancelEdit = () => { setEditColKey(null); setEditQtys({}); };
+
+  const saveEdit = async (col) => {
+    setSaving(true);
+    try {
+      const lines = catalog.flatMap((cat) =>
+        cat.items
+          .filter((it) => Number(editQtys[it.name]) > 0)
+          .map((it) => {
+            const existing = col.rec.lines.find((l) => l.itemName === it.name);
+            const qty = Number(editQtys[it.name]);
+            return {
+              category: cat.category,
+              itemName: it.name,
+              unit: 'per',
+              qty,
+              received: existing?.received ?? qty,
+              price: existing?.price ?? it.price,
+            };
+          })
+      );
+      await updateRecord(col.rec.id, { lines });
+      cancelEdit();
+      fetchRecords({ from, to, type: activeTab });
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Group records by date key → branch
@@ -157,10 +199,22 @@ export default function SaleOutSearchPage() {
                     <td className="px-2 py-1 border-r border-slate-100">{item.name}</td>
                     <td className="px-2 py-1 text-center text-slate-400 border-r border-slate-100">per</td>
                     {cols.map((col) => {
+                      const colKey = `${col.dk}-${col.br}`;
+                      const isEditing = editColKey === colKey;
                       const qty = getQty(col.rec, item.name);
                       return (
-                        <td key={`${col.dk}-${col.br}`} className="px-2 py-1 text-center tabular-nums border-r border-slate-100">
-                          {qty > 0 ? qty : <span className="text-slate-300 dark:text-slate-600">0</span>}
+                        <td key={colKey} className="px-1 py-0.5 text-center tabular-nums border-r border-slate-100">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={editQtys[item.name] ?? 0}
+                              onChange={(e) => setEditQtys((prev) => ({ ...prev, [item.name]: e.target.value }))}
+                              className="w-14 rounded border border-indigo-300 px-1 py-0.5 text-center text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-indigo-600 dark:bg-slate-700 dark:text-slate-100"
+                            />
+                          ) : (
+                            qty > 0 ? qty : <span className="text-slate-300 dark:text-slate-600">0</span>
+                          )}
                         </td>
                       );
                     })}
@@ -179,23 +233,53 @@ export default function SaleOutSearchPage() {
                   </td>
                 ))}
               </tr>
-              {can('manageUsers') && (
-                <tr className="print:hidden bg-slate-50 border-t border-slate-200 dark:bg-slate-900/50 dark:border-slate-700">
-                  <td colSpan={3} className="px-2 py-1 text-xs text-slate-400 border-r border-slate-200 dark:border-slate-700">Actions</td>
-                  {cols.map((col) => (
-                    <td key={`${col.dk}-${col.br}`} className="px-2 py-1 text-center border-r border-slate-200 dark:border-slate-700">
-                      {col.rec && (
-                        <button
-                          onClick={() => handleDelete(col.rec.id)}
-                          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30"
-                        >
-                          <Trash2 className="h-3 w-3" /> Del
-                        </button>
+              <tr className="print:hidden bg-slate-50 border-t border-slate-200 dark:bg-slate-900/50 dark:border-slate-700">
+                <td colSpan={3} className="px-2 py-1 text-xs text-slate-400 border-r border-slate-200 dark:border-slate-700">Actions</td>
+                {cols.map((col) => {
+                  const colKey = `${col.dk}-${col.br}`;
+                  const isEditing = editColKey === colKey;
+                  return (
+                    <td key={colKey} className="px-1 py-1 text-center border-r border-slate-200 dark:border-slate-700">
+                      {isEditing ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => saveEdit(col)}
+                            disabled={saving}
+                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 disabled:opacity-50"
+                          >
+                            <Check className="h-3 w-3" /> Save
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        col.rec && (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => startEdit(col)}
+                              className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                            >
+                              <Pencil className="h-3 w-3" /> Edit
+                            </button>
+                            {can('manageUsers') && (
+                              <button
+                                onClick={() => handleDelete(col.rec.id)}
+                                className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                              >
+                                <Trash2 className="h-3 w-3" /> Del
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
                     </td>
-                  ))}
-                </tr>
-              )}
+                  );
+                })}
+              </tr>
             </tfoot>
           </table>
         </div>
