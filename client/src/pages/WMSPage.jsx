@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { BarChart2, FilePen, FileSearch, PackageMinus, Printer, RefreshCw, ShoppingBag, TrendingDown, UserPlus } from 'lucide-react';
+import { BarChart2, FilePen, FileSearch, PackageMinus, Pencil, Printer, RefreshCw, ShoppingBag, TrendingDown, UserPlus } from 'lucide-react';
 
 const GROUPS = [
   [{ to: 'stock-refresh', label: 'Stock Refresh', icon: RefreshCw }],
@@ -17,6 +17,7 @@ const GROUPS = [
     { to: 'saleout', label: 'Sale Out', icon: TrendingDown },
     { to: 'saleout-search', label: 'SO Browse', icon: FileSearch },
   ],
+  [{ to: 'edit-price', label: 'Edit Price', icon: Pencil }],
 ];
 
 export default function WMSPage() {

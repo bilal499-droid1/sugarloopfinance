@@ -31,6 +31,7 @@ import SaleSearchPage from './stock/pages/SaleSearchPage';
 import CustomersPage from './stock/pages/CustomersPage';
 import SaleOutPage from './stock/pages/SaleOutPage';
 import SaleOutSearchPage from './stock/pages/SaleOutSearchPage';
+import EditPricePage from './stock/pages/EditPricePage';
 
 const RequirePermission = ({ permission, children }) => (useCan()(permission) ? children : <Navigate to="/" replace />);
 
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="saleout" element={<SaleOutPage />} />
             <Route path="saleout-search" element={<SaleOutSearchPage />} />
+            <Route path="edit-price" element={<EditPricePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

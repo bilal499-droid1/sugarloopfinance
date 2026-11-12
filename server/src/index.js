@@ -15,6 +15,7 @@ import customerRoutes from './routes/customerRoutes.js';
 import saleRoutes from './routes/saleRoutes.js';
 import saleOutRoutes from './routes/saleOutRoutes.js';
 import periodRoutes from './routes/periodRoutes.js';
+import itemPriceRoutes from './routes/itemPriceRoutes.js';
 import { announceChanges, liveStream } from './services/live.js';
 import { startPeriodScheduler } from './services/periodScheduler.js';
 
@@ -46,6 +47,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/saleout', saleOutRoutes);
 app.use('/api/periods', periodRoutes);
+app.use('/api/item-prices', itemPriceRoutes);
 
 app.use(errorHandler);
 

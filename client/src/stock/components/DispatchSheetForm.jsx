@@ -1,6 +1,7 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useSaleOutStore } from '../useSaleOutStore';
+import { useItemPricesStore } from '../useItemPricesStore';
 import PageHeader from '../../components/common/PageHeader';
 import { formatCurrency } from '../../utils/format';
 
@@ -17,9 +18,12 @@ const newRow = () => ({ id: ++_rowId, name: '', price: '', dispatched: '', recei
 
 export default function DispatchSheetForm({ catalog, allItems, type, saleDate, onSaleDateChange, branch, onBranchChange }) {
   const createRecord = useSaleOutStore((s) => s.createRecord);
+  const storePricesMap = useItemPricesStore((s) => s.prices);
+  const fetchPrices = useItemPricesStore((s) => s.fetchPrices);
+  const getPrice = useItemPricesStore((s) => s.getPrice);
 
   const blankQtys = () => Object.fromEntries(allItems.map((it) => [it.name, '']));
-  const blankPrices = () => Object.fromEntries(allItems.map((it) => [it.name, it.price]));
+  const blankPrices = () => Object.fromEntries(allItems.map((it) => [it.name, getPrice(type, it.name, it.price)]));
   const blankCustomRows = () => Object.fromEntries(catalog.map((cat) => [cat.category, []]));
 
   const [notes, setNotes] = useState('');
@@ -31,6 +35,19 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(null);
 
+  // Fetch stored prices on mount and re-sync whenever the store updates
+  useEffect(() => { fetchPrices(type); }, [type]);
+  useEffect(() => {
+    setPrices((prev) => {
+      const updated = { ...prev };
+      allItems.forEach((it) => {
+        const sp = storePricesMap[`${type}:${it.name}`];
+        if (sp !== undefined) updated[it.name] = sp;
+      });
+      return updated;
+    });
+  }, [storePricesMap]);
+
   const setDispatchedQty = (name, val) => {
     const n = val === '' ? '' : Math.max(0, Number(val));
     setDispatched((prev) => ({ ...prev, [name]: n }));
@@ -40,11 +57,6 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const setReceivedQty = (name, val) => {
     const n = val === '' ? '' : Math.max(0, Number(val));
     setReceived((prev) => ({ ...prev, [name]: n }));
-  };
-
-  const setItemPrice = (name, val) => {
-    const n = val === '' ? '' : Math.max(0, Number(val));
-    setPrices((prev) => ({ ...prev, [name]: n }));
   };
 
   const addCustomRow = (category) =>
@@ -243,13 +255,9 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
                         />
                       </td>
                       <td className="px-3 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          value={prices[item.name]}
-                          onChange={(e) => setItemPrice(item.name, e.target.value)}
-                          className="w-24 rounded border border-slate-300 px-2 py-0.5 text-right text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"
-                        />
+                        <span className="inline-block w-24 px-2 py-0.5 text-right text-sm tabular-nums text-slate-600">
+                          {prices[item.name] > 0 ? prices[item.name] : '—'}
+                        </span>
                       </td>
                       <td className="px-3 py-1.5 text-right tabular-nums font-medium">
                         {total > 0 ? formatCurrency(total) : <span className="text-slate-300">—</span>}
