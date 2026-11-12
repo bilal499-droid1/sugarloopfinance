@@ -37,6 +37,8 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const [saved, setSaved] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const searchInputRef = useRef(null);
 
   const tableRef = useRef(null);
@@ -242,6 +244,9 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
   const searchQ = searchQuery.trim().toLowerCase();
   const isMatch = (name) => searchQ && name.toLowerCase().includes(searchQ);
   const matchCount = searchQ ? allItems.filter((it) => isMatch(it.name)).length : 0;
+  const suggestions = searchQ
+    ? allItems.filter((it) => it.name.toLowerCase().includes(searchQ)).slice(0, 8)
+    : [];
 
   let serial = 0;
 
@@ -307,14 +312,78 @@ export default function DispatchSheetForm({ catalog, allItems, type, saleDate, o
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
+              onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); setSuggestionIndex(-1); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { setSearchQuery(''); setShowSuggestions(false); setSuggestionIndex(-1); return; }
+                if (!showSuggestions || suggestions.length === 0) return;
+                if (e.key === 'ArrowDown') { e.preventDefault(); setSuggestionIndex((i) => Math.min(i + 1, suggestions.length - 1)); return; }
+                if (e.key === 'ArrowUp') { e.preventDefault(); setSuggestionIndex((i) => Math.max(i - 1, -1)); return; }
+                const active = suggestionIndex >= 0 ? suggestions[suggestionIndex] : suggestions[0];
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  setSearchQuery(active.name);
+                  setShowSuggestions(false);
+                  setSuggestionIndex(-1);
+                }
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setSearchQuery(active.name);
+                  setShowSuggestions(false);
+                  setSuggestionIndex(-1);
+                  setTimeout(() => {
+                    if (!tableRef.current) return;
+                    const first = tableRef.current.querySelector('[data-search-match="true"]');
+                    if (first) {
+                      first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      const inp = first.querySelector('input[data-nav="dispatched"]');
+                      if (inp) inp.focus();
+                    }
+                  }, 50);
+                }
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => { setShowSuggestions(false); setSuggestionIndex(-1); }, 200)}
               placeholder="Search items… (Ctrl+F)"
               autoComplete="off"
               className="w-full rounded-md border border-slate-300 px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             {searchQ && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+              <button onMouseDown={(e) => { e.preventDefault(); setSearchQuery(''); setShowSuggestions(false); setSuggestionIndex(-1); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800">
+                {suggestions.map((it, si) => {
+                  const idx = it.name.toLowerCase().indexOf(searchQ);
+                  const isActive = si === suggestionIndex || (suggestionIndex === -1 && si === 0 && false);
+                  return (
+                    <div
+                      key={it.name}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSearchQuery(it.name);
+                        setShowSuggestions(false);
+                        setSuggestionIndex(-1);
+                        setTimeout(() => {
+                          if (!tableRef.current) return;
+                          const first = tableRef.current.querySelector('[data-search-match="true"]');
+                          if (first) {
+                            first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const inp = first.querySelector('input[data-nav="dispatched"]');
+                            if (inp) inp.focus();
+                          }
+                        }, 50);
+                      }}
+                      className={`cursor-pointer border-b border-slate-100 px-3 py-2 text-sm last:border-0 dark:border-slate-700 ${isActive ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-200' : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-200 dark:hover:bg-indigo-900/40'}`}
+                    >
+                      {it.name.slice(0, idx)}
+                      <span className="bg-yellow-200 font-semibold text-slate-900 dark:bg-yellow-500 dark:text-slate-900">
+                        {it.name.slice(idx, idx + searchQ.length)}
+                      </span>
+                      {it.name.slice(idx + searchQ.length)}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
