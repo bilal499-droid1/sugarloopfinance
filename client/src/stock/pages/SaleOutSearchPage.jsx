@@ -50,6 +50,7 @@ export default function SaleOutSearchPage() {
   const [activeTab, setActiveTab] = useState('perishable');
   const [from, setFrom] = useState(ninetyDaysAgo());
   const [to, setTo] = useState(today());
+  const [filterBranch, setFilterBranch] = useState('');
   const [editColKey, setEditColKey] = useState(null);
   const [editQtys, setEditQtys] = useState({});
   const [saving, setSaving] = useState(false);
@@ -58,10 +59,11 @@ export default function SaleOutSearchPage() {
   const allItems = activeTab === 'perishable' ? ALL_ITEMS : NP_ALL_ITEMS;
 
   useEffect(() => {
-    fetchRecords({ from, to, type: activeTab });
+    fetchRecords({ from, to, type: activeTab, ...(filterBranch && { branch: filterBranch }) });
   }, [activeTab]);
 
-  const handleSearch = () => fetchRecords({ from, to, type: activeTab });
+  const handleSearch = () =>
+    fetchRecords({ from, to, type: activeTab, ...(filterBranch && { branch: filterBranch }) });
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this Sale Out entry?')) return;
@@ -118,19 +120,22 @@ export default function SaleOutSearchPage() {
   });
   const dates = Object.keys(dateMap).sort();
 
-  // Build flat column list: all 5 known branches + any extra (e.g. no-branch entries)
+  // Build flat column list: selected branch only, or all 5 + any extras
+  const activeBranches = filterBranch ? [filterBranch] : BRANCHES;
   const cols = [];
   dates.forEach((dk) => {
     const knownBranchSet = new Set(BRANCHES);
-    BRANCHES.forEach((br) => {
+    activeBranches.forEach((br) => {
       cols.push({ dk, br, rec: dateMap[dk]?.[br] ?? null });
     });
-    // Show any entries saved without a recognised branch (e.g. old records)
-    Object.keys(dateMap[dk]).forEach((brKey) => {
-      if (!knownBranchSet.has(brKey)) {
-        cols.push({ dk, br: brKey || '(No Branch)', rec: dateMap[dk][brKey] });
-      }
-    });
+    // Show any entries saved without a recognised branch (e.g. old records) — only when showing all
+    if (!filterBranch) {
+      Object.keys(dateMap[dk]).forEach((brKey) => {
+        if (!knownBranchSet.has(brKey)) {
+          cols.push({ dk, br: brKey || '(No Branch)', rec: dateMap[dk][brKey] });
+        }
+      });
+    }
   });
 
   const getQty = (rec, itemName) => {
@@ -156,6 +161,19 @@ export default function SaleOutSearchPage() {
           <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">To</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Branch</label>
+          <select
+            value={filterBranch}
+            onChange={(e) => setFilterBranch(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          >
+            <option value="">All Branches</option>
+            {BRANCHES.map((br) => (
+              <option key={br} value={br}>{br}</option>
+            ))}
+          </select>
         </div>
         <button onClick={handleSearch}
           className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">
